@@ -9,12 +9,12 @@ import { v4 as uuidv4 } from 'uuid';
 const log_debug = debug('leapprotocol');
 
 interface Message {
-    CommuniqueType: string,
+    CommuniqueType: string;
     Header: {
-        ClientTag: string,
-        Url: string,
-    },
-    body?: any,
+        ClientTag: string;
+        Url: string;
+    };
+    body?: any;
 }
 
 interface MessageDetails {
@@ -23,9 +23,8 @@ interface MessageDetails {
     reject: (err: Error) => void;
 }
 
-
 export class LeapClient {
-    private connected: boolean = false;
+    private connected = false;
 
     private socket?: tls.TLSSocket;
     private readonly tlsOptions: tls.ConnectionOptions;
@@ -36,13 +35,7 @@ export class LeapClient {
 
     private responseParser: ResponseParser;
 
-    constructor(
-        private readonly host: string,
-        private readonly port: number,
-        ca: string,
-        key: string,
-        cert: string,
-    ) {
+    constructor(private readonly host: string, private readonly port: number, ca: string, key: string, cert: string) {
         const context = tls.createSecureContext({
             ca: ca,
             key: key,
@@ -55,10 +48,9 @@ export class LeapClient {
 
         this.responseParser = new ResponseParser();
         this.responseParser.on('response', this._handleResponse.bind(this));
-
     }
 
-    public async request(communique_type: string, url: string, body?: any, tag?: string) {
+    public async request(communique_type: string, url: string, body?: any, tag?: string): Promise<Response> {
         if (!this.connected) {
             await this._connect();
         }
@@ -85,13 +77,12 @@ export class LeapClient {
             Header: {
                 ClientTag: tag,
                 Url: url,
-            }
+            },
         };
 
         if (body !== undefined) {
             message.body = body;
         }
-
 
         this.inFlightRequests[tag] = {
             message: message,
@@ -100,7 +91,7 @@ export class LeapClient {
         };
 
         this.socket.write(JSON.stringify(message), () => {
-            log_debug("sent request tag ", tag, " successfully");
+            log_debug('sent request tag ', tag, ' successfully');
         });
 
         return requestPromise;
@@ -122,12 +113,11 @@ export class LeapClient {
     }
 
     private _empty() {
-
-        for (let arrow in this.inFlightRequests) {
+        for (const arrow in this.inFlightRequests) {
             this.inFlightRequests.delete(arrow);
         }
 
-        for (let sub in this.taggedSubscriptions) {
+        for (const sub in this.taggedSubscriptions) {
             this.taggedSubscriptions.delete(sub);
         }
 
@@ -145,6 +135,7 @@ export class LeapClient {
         this.connected = true;
 
         const socketError = (err: Error): void => {
+            log_debug('socket error: ', err);
             this._empty();
 
             if (this.socket) {
@@ -198,17 +189,16 @@ export class LeapClient {
     }
 
     private readonly socketDataHandler = (data: Buffer): void => {
-        let d = data.toString();
-        this.responseParser.handleData(d);
-    }
+        this.responseParser.handleData(data.toString());
+    };
 
     private _handleResponse(response: Response): void {
         const tag = response.Header.ClientTag;
         if (tag !== undefined) {
-            log_debug("got response to tag ", tag);
+            log_debug('got response to tag ', tag);
             const arrow: MessageDetails = this.inFlightRequests[tag];
             if (arrow !== undefined) {
-                log_debug("tag ", tag, " recognized as in-flight");
+                log_debug('tag ', tag, ' recognized as in-flight');
                 this.inFlightRequests.delete(tag);
                 arrow.resolve(response);
             } else {
@@ -216,20 +206,19 @@ export class LeapClient {
                 if (sub !== undefined) {
                     sub(response);
                 } else {
-                    log_debug("ERROR was not expecting tag ", tag);
+                    log_debug('ERROR was not expecting tag ', tag);
                 }
             }
         } else {
-            log_debug("got untagged response");
+            log_debug('got untagged response');
             // maybe emit 'unsolicited'?
-            for (let h of this.unsolicitedSubs) {
+            for (const h of this.unsolicitedSubs) {
                 try {
                     h(response);
                 } catch (e) {
-                    log_debug("got error from handler: ", e);
+                    log_debug('got error from handler: ', e);
                 }
             }
         }
     }
-
 }

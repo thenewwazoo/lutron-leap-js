@@ -1,10 +1,9 @@
-
-type CommuniqueType = string
+type CommuniqueType = string;
 
 export interface ResponseJSON {
-    CommuniqueType: CommuniqueType,
-    Header: ResponseHeaderJSON,
-    Body: any,
+    CommuniqueType: CommuniqueType;
+    Header: ResponseHeaderJSON;
+    Body: any;
 }
 
 export class Response {
@@ -20,10 +19,10 @@ export class Response {
 }
 
 export interface ResponseHeaderJSON {
-    MessageBodyType?: string,
-    StatusCode?: string,
-    Url?: string,
-    ClientTag?: string,
+    MessageBodyType?: string;
+    StatusCode?: string;
+    Url?: string;
+    ClientTag?: string;
 }
 
 export class ResponseHeader {
@@ -37,7 +36,7 @@ export class ResponseHeader {
             return new ResponseHeader();
         }
 
-        let status = (json.StatusCode === undefined) ? undefined : ResponseStatus.fromString(json.StatusCode);
+        const status = json.StatusCode === undefined ? undefined : ResponseStatus.fromString(json.StatusCode);
 
         return Object.assign({}, json, {
             StatusCode: status,
@@ -46,16 +45,15 @@ export class ResponseHeader {
 }
 
 export class ResponseStatus {
-
     constructor(public message: string, public code?: number) {}
 
     static fromString(s?: string): ResponseStatus {
-        let parts = s.split(" ", 2);
+        const parts = s.split(' ', 2);
         if (parts.length == 1) {
             return new ResponseStatus(s);
         }
 
-        let code = parseInt(parts[0]);
+        const code = parseInt(parts[0]);
         if (Number.isNaN(code)) {
             return new ResponseStatus(s);
         }
@@ -64,7 +62,6 @@ export class ResponseStatus {
     }
 
     public isSuccessful(): boolean {
-        return this.code !== undefined && this.code >=200 && this.code < 300
+        return this.code !== undefined && this.code >= 200 && this.code < 300;
     }
 }
-
