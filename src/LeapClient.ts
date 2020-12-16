@@ -1,9 +1,11 @@
 import { ConnectionOptions, TLSSocket, connect, createSecureContext } from 'tls';
 import debug from 'debug';
+import { EventEmitter } from 'events';
 
 import { Response } from './Messages';
 import { ResponseParser } from './ResponseParser';
 
+import TypedEmitter from 'typed-emitter';
 import { v4 as uuidv4 } from 'uuid';
 
 const log_debug = debug('leap:protocol');
@@ -25,7 +27,11 @@ interface MessageDetails {
     reject: (err: Error) => void;
 }
 
-export class LeapClient {
+interface LeapClientEvents {
+    unsolicited: (response: Response) => void;
+}
+
+export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClientEvents>) {
     private connected = false;
 
     private socket?: TLSSocket;
@@ -33,11 +39,11 @@ export class LeapClient {
 
     private inFlightRequests: Map<string, MessageDetails> = new Map();
     private taggedSubscriptions: Map<string, (r: Response) => void> = new Map();
-    private unsolicitedSubs: Array<(r: Response) => void> = [];
 
     private responseParser: ResponseParser;
 
     constructor(private readonly host: string, private readonly port: number, ca: string, key: string, cert: string) {
+        super();
         log_debug('new LeapClient being constructed');
         const context = createSecureContext({
             ca: ca,
@@ -159,8 +165,6 @@ export class LeapClient {
         for (const sub in this.taggedSubscriptions) {
             delete this.inFlightRequests[sub];
         }
-
-        this.unsolicitedSubs = [];
     }
 
     private _onConnect(next: () => void): void {
@@ -181,6 +185,8 @@ export class LeapClient {
             if (this.socket) {
                 this.socket.destroy();
             }
+
+            this.removeAllListeners('unsolicited');
         };
 
         function socketEnd(this: TLSSocket): void {
@@ -215,6 +221,7 @@ export class LeapClient {
             }
 
             clientInstance._empty();
+            clientInstance.removeAllListeners('unsolicited');
         }
 
         if (this.socket) {
@@ -254,15 +261,8 @@ export class LeapClient {
                 }
             }
         } else {
-            log_debug('got untagged response');
-            // maybe emit 'unsolicited'?
-            for (const h of this.unsolicitedSubs) {
-                try {
-                    h(response);
-                } catch (e) {
-                    log_debug('got error from handler: ', e);
-                }
-            }
+            log_debug('got untagged, unsolicited response');
+            this.emit('unsolicited', response);
         }
     }
 }

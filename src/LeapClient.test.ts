@@ -79,3 +79,25 @@ it('round-trip in-flight', async () => {
     expect(r.Header.StatusCode.code).toEqual(200);
     expect(r.Header.ClientTag).toEqual('d2018137-c87f-4315-ab04-e727c4fc973b');
 });
+
+it('unsolicited event', async () => {
+    let response = `{"CommuniqueType": "ReadResponse", "Header": {"MessageBodyType": "MultipleDeviceDefinition", "StatusCode": "200 OK", "Url": "/device"}, "Body": {"First": 1, "Second": 2}}
+`;
+
+    let client = new LeapClient("", 100, "", "", "");
+
+    client.connect();
+
+    MockTLS.__secureConnect();
+
+    const mockHandle = jest.fn((response: Response): void => {
+        log_debug("unsolicited response handler got called for tag ", response.Header.ClientTag);
+        expect(response.Header.ClientTag).toBeUndefined();
+    });
+
+    client.on('unsolicited', mockHandle);
+
+    MockTLS.__tickle(response);
+
+    expect(mockHandle.mock.calls.length).toEqual(1);
+});
