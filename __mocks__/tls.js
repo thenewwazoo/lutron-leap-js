@@ -40,11 +40,15 @@ function __tellme() {
     return writtenData;
 }
 
+function __reset() {
+    writtenData = [];
+}
 
 module.exports = {
     MockedSocket,
     __secureConnect,
     __tickle,
     __tellme,
+    __reset,
     theSocket,
 };

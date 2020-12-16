@@ -13,6 +13,10 @@ const ctx_stub = ImportMock.mockFunction(tls, 'createSecureContext', Object.crea
 
 const log_debug = debug('leap:test:client');
 
+beforeEach(() => {
+    MockTLS.__reset();
+});
+
 it('round-trip in-flight', async () => {
 
     let request = '{"CommuniqueType":"ReadRequest","Header":{"ClientTag":"d2018137-c87f-4315-ab04-e727c4fc973b","Url":"/device"}}';
