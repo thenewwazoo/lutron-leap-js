@@ -4,7 +4,7 @@ import { Response } from './Messages';
 import { EventEmitter } from 'events';
 import TypedEmitter from 'typed-emitter';
 
-const log_debug = debug('responseparser');
+const log_debug = debug('leap:responseparser');
 
 interface ResponseEvents {
     response: (response: Response) => void;
@@ -35,7 +35,7 @@ export class ResponseParser extends (EventEmitter as new () => TypedEmitter<Resp
                 const response = Response.fromJSON(JSON.parse(line));
                 this.emit('response', response);
             } catch (e) {
-                log_debug('malformed response: ', line);
+                log_debug('malformed response: ', e, ' caused by ', line);
             }
         }
     }

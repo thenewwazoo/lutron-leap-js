@@ -1,4 +1,4 @@
-import * as tls from 'tls';
+import { ConnectionOptions, TLSSocket, connect, createSecureContext } from 'tls';
 import debug from 'debug';
 
 import { Response } from './Messages';
@@ -6,7 +6,7 @@ import { ResponseParser } from './ResponseParser';
 
 import { v4 as uuidv4 } from 'uuid';
 
-const log_debug = debug('leapprotocol');
+const log_debug = debug('leap:protocol');
 
 interface Message {
     CommuniqueType: string;
@@ -26,17 +26,18 @@ interface MessageDetails {
 export class LeapClient {
     private connected = false;
 
-    private socket?: tls.TLSSocket;
-    private readonly tlsOptions: tls.ConnectionOptions;
+    private socket?: TLSSocket;
+    private readonly tlsOptions: ConnectionOptions;
 
-    private inFlightRequests: Map<string, MessageDetails>;
-    private taggedSubscriptions: Map<string, (r: Response) => void>;
-    private unsolicitedSubs: Array<(r: Response) => void>;
+    private inFlightRequests: Map<string, MessageDetails> = new Map();
+    private taggedSubscriptions: Map<string, (r: Response) => void> = new Map();
+    private unsolicitedSubs: Array<(r: Response) => void> = [];
 
     private responseParser: ResponseParser;
 
     constructor(private readonly host: string, private readonly port: number, ca: string, key: string, cert: string) {
-        const context = tls.createSecureContext({
+        log_debug('new LeapClient being constructed');
+        const context = createSecureContext({
             ca: ca,
             key: key,
             cert: cert,
@@ -51,9 +52,12 @@ export class LeapClient {
     }
 
     public async request(communique_type: string, url: string, body?: any, tag?: string): Promise<Response> {
+        log_debug('new request incoming with tag ', tag);
         if (!this.connected) {
-            await this._connect();
+            log_debug('was not connected');
+            await this.connect();
         }
+        log_debug('connected! continuing...');
 
         if (tag === undefined) {
             tag = uuidv4();
@@ -89,22 +93,29 @@ export class LeapClient {
             resolve: requestResolve,
             reject: requestReject,
         };
+        log_debug('added promise to inFlightRequests with tag key ', tag);
 
-        this.socket.write(JSON.stringify(message), () => {
+        const msg = JSON.stringify(message);
+        log_debug('request handler about to write: ', msg);
+        this.socket.write(msg, () => {
             log_debug('sent request tag ', tag, ' successfully');
         });
 
         return requestPromise;
     }
 
-    private _connect(): Promise<void> {
+    public connect(): Promise<void> {
         if (this.connected) {
+            log_debug('oops already connected');
             return Promise.resolve();
         }
+        log_debug('needs to connect');
 
         return new Promise((resolve, reject) => {
-            this.socket = tls.connect(this.port, this.host, this.tlsOptions);
+            log_debug('about to connect');
+            this.socket = connect(this.port, this.host, this.tlsOptions);
             this.socket.once('secureConnect', () => {
+                log_debug('securely connected');
                 this._onConnect(resolve);
             });
 
@@ -125,6 +136,7 @@ export class LeapClient {
     }
 
     private _onConnect(next: () => void): void {
+        log_debug('_onConnect called');
         // Clear out event listeners from _connect()
         if (this.socket) {
             this.socket.removeAllListeners('error');
@@ -143,14 +155,14 @@ export class LeapClient {
             }
         };
 
-        function socketEnd(this: tls.TLSSocket): void {
+        function socketEnd(this: TLSSocket): void {
             if (this) {
                 // Acknowledge to other end of the connection that the connection is ended.
                 this.end();
             }
         }
 
-        function socketTimeout(this: tls.TLSSocket): void {
+        function socketTimeout(this: TLSSocket): void {
             if (this) {
                 // Acknowledge to other end of the connection that the connection is ended.
                 this.end();
@@ -160,7 +172,7 @@ export class LeapClient {
         // eslint-disable-next-line @typescript-eslint/no-this-alias
         const clientInstance = this;
 
-        function socketClose(this: tls.TLSSocket): void {
+        function socketClose(this: TLSSocket): void {
             if (this) {
                 this.removeListener('error', socketError);
                 this.removeListener('close', socketClose);
@@ -189,7 +201,9 @@ export class LeapClient {
     }
 
     private readonly socketDataHandler = (data: Buffer): void => {
-        this.responseParser.handleData(data.toString());
+        const s = data.toString();
+        log_debug('got data from socket: ', s);
+        this.responseParser.handleData(s);
     };
 
     private _handleResponse(response: Response): void {
