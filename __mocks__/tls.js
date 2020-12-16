@@ -1,6 +1,8 @@
 'use strict';
 
+// eslint-disable-next-line
 const EventEmitter = require('events');
+// eslint-disable-next-line
 const debug = require('debug');
 const log_debug = debug('leap:mock:tls');
 

@@ -3,12 +3,12 @@ type CommuniqueType = string;
 export interface ResponseJSON {
     CommuniqueType: CommuniqueType;
     Header: ResponseHeaderJSON;
-    Body: any;
+    Body: Record<string, unknown>;
 }
 
 export class Response {
     public CommuniqueType?: CommuniqueType;
-    public Body?: any;
+    public Body?: Record<string, unknown>;
     public Header: ResponseHeader;
 
     static fromJSON(json: ResponseJSON): Response {

@@ -14,7 +14,7 @@ interface Message {
         ClientTag: string;
         Url: string;
     };
-    body?: any;
+    body?: Record<string, unknown>;
 }
 
 interface MessageDetails {
@@ -51,7 +51,12 @@ export class LeapClient {
         this.responseParser.on('response', this._handleResponse.bind(this));
     }
 
-    public async request(communique_type: string, url: string, body?: any, tag?: string): Promise<Response> {
+    public async request(
+        communique_type: string,
+        url: string,
+        body?: Record<string, unknown>,
+        tag?: string,
+    ): Promise<Response> {
         log_debug('new request incoming with tag ', tag);
         if (!this.connected) {
             log_debug('was not connected');
