@@ -8,6 +8,8 @@ import { v4 as uuidv4 } from 'uuid';
 
 const log_debug = debug('leap:protocol');
 
+export type ResponseWithTag = {response: Response, tag: string};
+
 interface Message {
     CommuniqueType: string;
     Header: {
@@ -128,13 +130,34 @@ export class LeapClient {
         });
     }
 
+    public async subscribe(
+        url: string,
+        callback: (resp: Response) => void,
+        communique_type: string,
+        body?: Record<string, unknown>,
+        tag?: string,
+    ): Promise<ResponseWithTag> {
+        if (tag === undefined) {
+            tag = uuidv4();
+        }
+
+        return await this.request(communique_type, url, body, tag).then((response: Response) => {
+            if (response.Header.StatusCode !== undefined && response.Header.StatusCode.isSuccessful()) {
+                this.taggedSubscriptions[tag] = callback;
+                log_debug('Subscribed to ', url, ' as ', tag);
+            }
+
+            return { response: response, tag: tag };
+        });
+    }
+
     private _empty() {
         for (const arrow in this.inFlightRequests) {
-            this.inFlightRequests.delete(arrow);
+            delete this.inFlightRequests[arrow];
         }
 
         for (const sub in this.taggedSubscriptions) {
-            this.taggedSubscriptions.delete(sub);
+            delete this.inFlightRequests[sub];
         }
 
         this.unsolicitedSubs = [];
@@ -218,11 +241,13 @@ export class LeapClient {
             const arrow: MessageDetails = this.inFlightRequests[tag];
             if (arrow !== undefined) {
                 log_debug('tag ', tag, ' recognized as in-flight');
-                this.inFlightRequests.delete(tag);
+                delete this.inFlightRequests[tag];
                 arrow.resolve(response);
             } else {
+                log_debug('tag ', tag, ' not in flight');
                 const sub = this.taggedSubscriptions[tag];
                 if (sub !== undefined) {
+                    log_debug('tag ', tag, ' has a subscription');
                     sub(response);
                 } else {
                     log_debug('ERROR was not expecting tag ', tag);
