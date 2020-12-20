@@ -1,3 +1,5 @@
+/* tslint:disable:max-classes-per-file */
+
 type CommuniqueType = string;
 
 export interface ResponseJSON {
@@ -10,6 +12,10 @@ export class Response {
     public CommuniqueType?: CommuniqueType;
     public Body?: Record<string, unknown>;
     public Header: ResponseHeader;
+
+    constructor() {
+        this.Header = new ResponseHeader();
+    }
 
     static fromJSON(json: ResponseJSON): Response {
         return Object.assign({}, json, {
@@ -26,7 +32,7 @@ export interface ResponseHeaderJSON {
 }
 
 export class ResponseHeader {
-    public StatusCode: ResponseStatus;
+    public StatusCode?: ResponseStatus;
     public Url?: string;
     public MessageBodyType?: string;
     public ClientTag?: string;
@@ -47,13 +53,13 @@ export class ResponseHeader {
 export class ResponseStatus {
     constructor(public message: string, public code?: number) {}
 
-    static fromString(s?: string): ResponseStatus {
+    static fromString(s: string): ResponseStatus {
         const parts = s.split(' ', 2);
-        if (parts.length == 1) {
+        if (parts.length === 1) {
             return new ResponseStatus(s);
         }
 
-        const code = parseInt(parts[0]);
+        const code = parseInt(parts[0], 10);
         if (Number.isNaN(code)) {
             return new ResponseStatus(s);
         }

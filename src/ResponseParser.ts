@@ -4,7 +4,7 @@ import { Response } from './Messages';
 import { EventEmitter } from 'events';
 import TypedEmitter from 'typed-emitter';
 
-const log_debug = debug('leap:responseparser');
+const logDebug = debug('leap:responseparser');
 
 interface ResponseEvents {
     response: (response: Response) => void;
@@ -14,16 +14,16 @@ export class ResponseParser extends (EventEmitter as new () => TypedEmitter<Resp
     private buffer = '';
 
     public handleData(data: string): void {
-        log_debug('handling data ', data);
-        log_debug('buffer is ', this.buffer);
+        logDebug('handling data ', data);
+        logDebug('buffer is ', this.buffer);
 
         data = this.buffer + data;
 
-        const lines: Array<string> = data.split(/\r?\n/);
+        const lines: string[] = data.split(/\r?\n/);
         const len = lines.length - 1;
         if (!len) {
             // didn't get a full line.
-            log_debug("buffer doesn't contain a full line");
+            logDebug("buffer doesn't contain a full line");
             return;
         }
 
@@ -31,11 +31,11 @@ export class ResponseParser extends (EventEmitter as new () => TypedEmitter<Resp
 
         for (const line of lines.slice(0, len)) {
             try {
-                log_debug('parsing line ', line);
+                logDebug('parsing line ', line);
                 const response = Response.fromJSON(JSON.parse(line));
                 this.emit('response', response);
             } catch (e) {
-                log_debug('malformed response: ', e, ' caused by ', line);
+                logDebug('malformed response: ', e, ' caused by ', line);
             }
         }
     }

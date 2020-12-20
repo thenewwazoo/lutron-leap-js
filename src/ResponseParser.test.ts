@@ -1,4 +1,3 @@
-
 import { Response } from './Messages';
 import { ResponseParser } from './ResponseParser';
 
@@ -11,7 +10,7 @@ test('single happy message', () => {
 `;
 
     function receive(response: Response) {
-        expect(response.Header.ClientTag).toEqual("something");
+        expect(response.Header.ClientTag).toEqual('something');
         proof = true;
     }
 
@@ -32,9 +31,9 @@ test('two lines', () => {
 
     function receive(response: Response) {
         if (count == 0) {
-            expect(response.Header.ClientTag).toEqual("first");
+            expect(response.Header.ClientTag).toEqual('first');
         } else {
-            expect(response.Header.ClientTag).toEqual("second");
+            expect(response.Header.ClientTag).toEqual('second');
         }
         count += 1;
     }
@@ -71,7 +70,7 @@ test('full, then partial line', () => {
     let line = `{"CommuniqueType": "SubscribeResponse", "Header": {"ClientTag": "first", "StatusCode": "204 NoContent", "Url": "/device/status/deviceheard"}}
 {"CommuniqueType": "SubscribeResponse", "Header": `;
 
-    function receive(response) {
+    function receive(response: Response) {
         expect(response.Header.ClientTag).toEqual('first');
         count += 1;
     }
@@ -90,7 +89,7 @@ test('full line of garbage', () => {
 
     let proof = true;
 
-    function receive(response) {
+    function receive(response: Response) {
         proof = false;
     }
 
@@ -109,8 +108,8 @@ test('throw away the garbage', () => {
 
     let count = 0;
 
-    function receive(response) {
-        expect(response.Header.ClientTag).toEqual("second");
+    function receive(response: Response) {
+        expect(response.Header.ClientTag).toEqual('second');
         count += 1;
     }
 
@@ -118,5 +117,4 @@ test('throw away the garbage', () => {
     p.handleData(line);
 
     expect(count).toEqual(1);
-
 });
