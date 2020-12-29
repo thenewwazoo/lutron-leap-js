@@ -1,10 +1,10 @@
 import { Response, ResponseHeader, ResponseStatus } from './Messages';
 
 test('full response decode', () => {
-    let line =
+    const line =
         '{"CommuniqueType": "ReadResponse", "Header": {"ClientTag": "d2018137-c87f-4315-ab04-e727c4fc973b", "MessageBodyType": "OneZoneStatus", "StatusCode": "200 OK", "Url": "/zone/1/status"}, "Body": {"ZoneStatus": {"href": "/zone/1/status", "Level": 100, "Zone": {"href": "/zone/1"}, "StatusAccuracy": "Good"}}}';
 
-    let response: Response = Response.fromJSON(JSON.parse(line));
+    const response: Response = Response.fromJSON(JSON.parse(line));
 
     expect(response?.Header.StatusCode?.code).toEqual(200);
     expect(response?.Header.ClientTag).toEqual('d2018137-c87f-4315-ab04-e727c4fc973b');
@@ -14,10 +14,10 @@ test('full response decode', () => {
 });
 
 test('no-tag, no-body response decode', () => {
-    let line =
+    const line =
         '{"CommuniqueType": "SubscribeResponse", "Header": {"StatusCode": "204 NoContent", "Url": "/device/status/deviceheard"}}';
 
-    let response: Response = Response.fromJSON(JSON.parse(line));
+    const response: Response = Response.fromJSON(JSON.parse(line));
 
     expect(response?.Header.StatusCode?.code).toEqual(204);
     expect(response?.Header.ClientTag).toBeUndefined();
@@ -26,9 +26,9 @@ test('no-tag, no-body response decode', () => {
 });
 
 test('status line decode', () => {
-    let line = '204 NoContent';
+    const line = '204 NoContent';
 
-    let status = ResponseStatus.fromString(line);
+    const status = ResponseStatus.fromString(line);
 
     expect(status.code).toEqual(204);
     expect(status.message).toEqual('NoContent');
@@ -36,10 +36,10 @@ test('status line decode', () => {
 });
 
 test('header decode', () => {
-    let happy_header =
+    const happy_header =
         '{"MessageBodyType": "MultipleDeviceDefinition", "StatusCode": "200 OK", "Url": "/device", "ClientTag": "d2018137-c87f-4315-ab04-e727c4fc973b"}';
 
-    let resp_hdr: ResponseHeader = ResponseHeader.fromJSON(JSON.parse(happy_header));
+    const resp_hdr: ResponseHeader = ResponseHeader.fromJSON(JSON.parse(happy_header));
 
     expect(resp_hdr?.StatusCode?.code).toEqual(200);
     expect(resp_hdr?.StatusCode?.message).toEqual('OK');
@@ -51,9 +51,9 @@ test('header decode', () => {
 });
 
 test('no content header decode', () => {
-    let line = '{"StatusCode": "204 NoContent", "Url": "/device/status/deviceheard"}';
+    const line = '{"StatusCode": "204 NoContent", "Url": "/device/status/deviceheard"}';
 
-    let resp_hdr: ResponseHeader = ResponseHeader.fromJSON(JSON.parse(line));
+    const resp_hdr: ResponseHeader = ResponseHeader.fromJSON(JSON.parse(line));
 
     expect(resp_hdr?.StatusCode?.code).toEqual(204);
     expect(resp_hdr?.StatusCode?.message).toEqual('NoContent');
@@ -65,9 +65,9 @@ test('no content header decode', () => {
 });
 
 test('unsuccessful status code', () => {
-    let line = '{"StatusCode": "500 InternalError"}';
+    const line = '{"StatusCode": "500 InternalError"}';
 
-    let resp_hdr: ResponseHeader = ResponseHeader.fromJSON(JSON.parse(line));
+    const resp_hdr: ResponseHeader = ResponseHeader.fromJSON(JSON.parse(line));
 
     expect(resp_hdr?.StatusCode?.code).toEqual(500);
     expect(resp_hdr?.StatusCode?.message).toEqual('InternalError');
@@ -79,9 +79,9 @@ test('unsuccessful status code', () => {
 });
 
 test('no number code', () => {
-    let line = '{"StatusCode": "InternalError"}';
+    const line = '{"StatusCode": "InternalError"}';
 
-    let resp_hdr: ResponseHeader = ResponseHeader.fromJSON(JSON.parse(line));
+    const resp_hdr: ResponseHeader = ResponseHeader.fromJSON(JSON.parse(line));
 
     expect(resp_hdr?.StatusCode?.code).toBeUndefined();
     expect(resp_hdr?.StatusCode?.message).toEqual('InternalError');
@@ -93,9 +93,9 @@ test('no number code', () => {
 });
 
 test('mangled status code', () => {
-    let line = '{"StatusCode": "asdfkjlkjwe wafjehi"}';
+    const line = '{"StatusCode": "asdfkjlkjwe wafjehi"}';
 
-    let resp_hdr: ResponseHeader = ResponseHeader.fromJSON(JSON.parse(line));
+    const resp_hdr: ResponseHeader = ResponseHeader.fromJSON(JSON.parse(line));
 
     expect(resp_hdr?.StatusCode?.code).toBeUndefined();
     expect(resp_hdr?.StatusCode?.message).toEqual('asdfkjlkjwe wafjehi');
@@ -107,9 +107,9 @@ test('mangled status code', () => {
 });
 
 test('mangled', () => {
-    let line = '{"Invalid": "Yes I am"}';
+    const line = '{"Invalid": "Yes I am"}';
 
-    let resp = Response.fromJSON(JSON.parse(line));
+    const resp = Response.fromJSON(JSON.parse(line));
 
     expect(resp.Body).toBeUndefined();
     expect(resp.CommuniqueType).toBeUndefined();

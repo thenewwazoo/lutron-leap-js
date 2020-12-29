@@ -11,7 +11,11 @@
     "homepage": "https://github.com/thenewwazoo/lutron-leap-js",
     "license": "GPL-3.0",
     "author": "Brandon Matthews <thenewwazoo@optimaltour.us>",
-    "main": "index.js",
+    "main": "lib/index.js",
+    "types": "lib/index.d.ts",
+    "files": [
+        "lib/**/*"
+    ],
     "devDependencies": {
         "@types/debug": "^4.1.5",
         "@types/jest": "^26.0.19",
@@ -33,6 +37,9 @@
         "lint": "tslint -p tsconfig.json --fix"
     },
     "dependencies": {
+        "ip-address": "^7.1.0",
+        "multicast-dns": "^7.2.2",
+        "tinkerhub-mdns": "^0.5.1",
         "uuid": "^8.3.2"
     }
 }

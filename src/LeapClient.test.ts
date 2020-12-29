@@ -1,4 +1,4 @@
-import * as debug from 'debug';
+const debug = require('debug');
 
 const MockTLS = require('../__mocks__/tls.js');
 import * as tls from 'tls';
@@ -22,18 +22,18 @@ beforeEach(() => {
 it('subscribe and receive', async () => {
     logDebug('STARTING: subscribe and receive');
 
-    let request =
+    const request =
         '{"CommuniqueType": "SubscribeRequest", "Header": {"ClientTag": "5433bbcc-fce6-40c8-bd97-6d1a17dfcd5b", "Url": "/occupancygroup/status"}}';
-    let req_commtype = 'SubscribeRequest';
-    let req_url = '/occupancygroup/status';
-    let req_tag = '5433bbcc-fce6-40c8-bd97-6d1a17dfcd5b';
+    const req_commtype = 'SubscribeRequest';
+    const req_url = '/occupancygroup/status';
+    const req_tag = '5433bbcc-fce6-40c8-bd97-6d1a17dfcd5b';
 
-    let response = `{"CommuniqueType": "SubscribeResponse", "Header": {"ClientTag": "5433bbcc-fce6-40c8-bd97-6d1a17dfcd5b", "MessageBodyType": "MultipleOccupancyGroupStatus", "StatusCode": "200 OK", "Url": "/occupancygroup/status"}, "Body": {}}
+    const response = `{"CommuniqueType": "SubscribeResponse", "Header": {"ClientTag": "5433bbcc-fce6-40c8-bd97-6d1a17dfcd5b", "MessageBodyType": "OneZoneStatus", "StatusCode": "200 OK", "Url": "/occupancygroup/status"}, "Body": {}}
 `;
 
-    let count = 0;
+    const count = 0;
 
-    let client = new LeapClient('', 0, '', '', '');
+    const client = new LeapClient('', 0, '', '', '');
     client.connect();
     MockTLS.__secureConnect();
 
@@ -42,11 +42,11 @@ it('subscribe and receive', async () => {
         expect(response.Header.ClientTag).toEqual(req_tag);
     });
 
-    let p: Promise<ResponseWithTag> = client.subscribe(req_url, mockSubHandle, req_commtype, undefined, req_tag);
+    const p: Promise<ResponseWithTag> = client.subscribe(req_url, mockSubHandle, req_commtype, undefined, req_tag);
 
     MockTLS.__tickle(response);
 
-    let r: ResponseWithTag = await p;
+    const r: ResponseWithTag = await p;
 
     expect(r.response.Header.ClientTag).toEqual(req_tag);
 
@@ -60,26 +60,27 @@ it('subscribe and receive', async () => {
 it('round-trip in-flight', async () => {
     logDebug('STARTING: round-trip in-flight');
 
-    let request =
-        '{"CommuniqueType":"ReadRequest","Header":{"ClientTag":"d2018137-c87f-4315-ab04-e727c4fc973b","Url":"/device"}}';
-    let req_commtype = 'ReadRequest';
-    let req_url = '/device';
-    let req_tag = 'd2018137-c87f-4315-ab04-e727c4fc973b';
+    const request =
+        `{"CommuniqueType":"ReadRequest","Header":{"ClientTag":"d2018137-c87f-4315-ab04-e727c4fc973b","Url":"/device"}}
+`;
+    const req_commtype = 'ReadRequest';
+    const req_url = '/device';
+    const req_tag = 'd2018137-c87f-4315-ab04-e727c4fc973b';
 
-    let response = `{"CommuniqueType": "ReadResponse", "Header": {"ClientTag": "d2018137-c87f-4315-ab04-e727c4fc973b", "MessageBodyType": "MultipleDeviceDefinition", "StatusCode": "200 OK", "Url": "/device"}, "Body": {"First": 1, "Second": 2}}
+    const response = `{"CommuniqueType": "ReadResponse", "Header": {"ClientTag": "d2018137-c87f-4315-ab04-e727c4fc973b", "MessageBodyType": "MultipleDeviceDefinition", "StatusCode": "200 OK", "Url": "/device"}, "Body": {"First": 1, "Second": 2}}
 `;
 
-    let client = new LeapClient('foohost', 6666, 'cafilestr', 'keystr', 'certstr');
+    const client = new LeapClient('foohost', 6666, 'cafilestr', 'keystr', 'certstr');
 
     client.connect();
 
     MockTLS.__secureConnect();
 
-    let p: Promise<Response> = client.request(req_commtype, req_url, undefined, req_tag);
+    const p: Promise<Response> = client.request(req_commtype, req_url, undefined, req_tag);
 
     MockTLS.__tickle(response);
 
-    let r = await p;
+    const r = await p;
     logDebug('test request has gotten a response');
     // @ts-ignore
     expect(MockTLS.__tellme()[0]).toEqual(request);
@@ -92,10 +93,10 @@ it('round-trip in-flight', async () => {
 
 it('unsolicited event', async () => {
     logDebug('STARTING: unsolicited event');
-    let response = `{"CommuniqueType": "ReadResponse", "Header": {"MessageBodyType": "MultipleDeviceDefinition", "StatusCode": "200 OK", "Url": "/device"}, "Body": {"First": 1, "Second": 2}}
+    const response = `{"CommuniqueType": "ReadResponse", "Header": {"MessageBodyType": "MultipleDeviceDefinition", "StatusCode": "200 OK", "Url": "/device"}, "Body": {"First": 1, "Second": 2}}
 `;
 
-    let client = new LeapClient('', 100, '', '', '');
+    const client = new LeapClient('', 100, '', '', '');
 
     client.connect();
 

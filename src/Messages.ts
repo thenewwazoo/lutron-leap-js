@@ -1,28 +1,8 @@
 /* tslint:disable:max-classes-per-file */
 
+import { parseBody, MessageBodyType, BodyType } from './MessageBodyTypes';
+
 type CommuniqueType = string;
-
-export interface ResponseJSON {
-    CommuniqueType: CommuniqueType;
-    Header: ResponseHeaderJSON;
-    Body: Record<string, unknown>;
-}
-
-export class Response {
-    public CommuniqueType?: CommuniqueType;
-    public Body?: Record<string, unknown>;
-    public Header: ResponseHeader;
-
-    constructor() {
-        this.Header = new ResponseHeader();
-    }
-
-    static fromJSON(json: ResponseJSON): Response {
-        return Object.assign({}, json, {
-            Header: ResponseHeader.fromJSON(json.Header),
-        });
-    }
-}
 
 export interface ResponseHeaderJSON {
     MessageBodyType?: string;
@@ -34,18 +14,39 @@ export interface ResponseHeaderJSON {
 export class ResponseHeader {
     public StatusCode?: ResponseStatus;
     public Url?: string;
-    public MessageBodyType?: string;
+    public MessageBodyType?: MessageBodyType;
     public ClientTag?: string;
 
-    static fromJSON(json: ResponseHeaderJSON): ResponseHeader {
-        if (json === undefined) {
-            return new ResponseHeader();
-        }
-
-        const status = json.StatusCode === undefined ? undefined : ResponseStatus.fromString(json.StatusCode);
+    static fromJSON(json?: ResponseHeaderJSON): ResponseHeader {
+        const status = json?.StatusCode === undefined ? undefined : ResponseStatus.fromString(json.StatusCode);
 
         return Object.assign({}, json, {
             StatusCode: status,
+            MessageBodyType: json?.MessageBodyType as MessageBodyType,
+        });
+    }
+}
+
+export interface ResponseJSON {
+    CommuniqueType: CommuniqueType;
+    Header: ResponseHeaderJSON;
+    Body: object;
+}
+
+export class Response {
+    public CommuniqueType?: CommuniqueType;
+    public Body?: BodyType;
+    public Header: ResponseHeader;
+
+    constructor() {
+        this.Header = new ResponseHeader();
+    }
+
+    static fromJSON(json: ResponseJSON): Response {
+        const header = ResponseHeader.fromJSON(json.Header);
+        return Object.assign(new Response(), json, {
+            Header: header,
+            Body: header.MessageBodyType ? parseBody(header.MessageBodyType, json.Body) : undefined,
         });
     }
 }

@@ -2,11 +2,11 @@ import { Response } from './Messages';
 import { ResponseParser } from './ResponseParser';
 
 test('single happy message', () => {
-    let p = new ResponseParser();
+    const p = new ResponseParser();
 
     let proof = false;
 
-    let line = `{"CommuniqueType": "SubscribeResponse", "Header": {"ClientTag": "something", "StatusCode": "204 NoContent", "Url": "/device/status/deviceheard"}}
+    const line = `{"CommuniqueType": "SubscribeResponse", "Header": {"ClientTag": "something", "StatusCode": "204 NoContent", "Url": "/device/status/deviceheard"}}
 `;
 
     function receive(response: Response) {
@@ -21,11 +21,11 @@ test('single happy message', () => {
 });
 
 test('two lines', () => {
-    let p = new ResponseParser();
+    const p = new ResponseParser();
 
     let count = 0;
 
-    let line = `{"CommuniqueType": "SubscribeResponse", "Header": {"ClientTag": "first", "StatusCode": "204 NoContent", "Url": "/device/status/deviceheard"}}
+    const line = `{"CommuniqueType": "SubscribeResponse", "Header": {"ClientTag": "first", "StatusCode": "204 NoContent", "Url": "/device/status/deviceheard"}}
 {"CommuniqueType": "SubscribeResponse", "Header": {"ClientTag": "second", "StatusCode": "204 NoContent", "Url": "/device/status/deviceheard"}}
 `;
 
@@ -45,9 +45,9 @@ test('two lines', () => {
 });
 
 test('partial line', () => {
-    let p = new ResponseParser();
+    const p = new ResponseParser();
 
-    let line = '{"CommuniqueType": "SubscribeResponse", "Header": {';
+    const line = '{"CommuniqueType": "SubscribeResponse", "Header": {';
 
     let proof = true;
 
@@ -63,11 +63,11 @@ test('partial line', () => {
 });
 
 test('full, then partial line', () => {
-    let p = new ResponseParser();
+    const p = new ResponseParser();
 
     let count = 0;
 
-    let line = `{"CommuniqueType": "SubscribeResponse", "Header": {"ClientTag": "first", "StatusCode": "204 NoContent", "Url": "/device/status/deviceheard"}}
+    const line = `{"CommuniqueType": "SubscribeResponse", "Header": {"ClientTag": "first", "StatusCode": "204 NoContent", "Url": "/device/status/deviceheard"}}
 {"CommuniqueType": "SubscribeResponse", "Header": `;
 
     function receive(response: Response) {
@@ -82,9 +82,9 @@ test('full, then partial line', () => {
 });
 
 test('full line of garbage', () => {
-    let p = new ResponseParser();
+    const p = new ResponseParser();
 
-    let line = `this is not valid JSON, but it does end in a newline
+    const line = `this is not valid JSON, but it does end in a newline
 `;
 
     let proof = true;
@@ -100,9 +100,9 @@ test('full line of garbage', () => {
 });
 
 test('throw away the garbage', () => {
-    let p = new ResponseParser();
+    const p = new ResponseParser();
 
-    let line = `this is not valid JSON, but it does end in a newline
+    const line = `this is not valid JSON, but it does end in a newline
 {"CommuniqueType": "SubscribeResponse", "Header": {"ClientTag": "second", "StatusCode": "204 NoContent", "Url": "/device/status/deviceheard"}}
 `;
 

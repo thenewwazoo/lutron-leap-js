@@ -29,6 +29,7 @@ interface MessageDetails {
 
 interface LeapClientEvents {
     unsolicited: (response: Response) => void;
+    disconnected: () => void;
 }
 
 export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClientEvents>) {
@@ -53,6 +54,8 @@ export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClie
 
         this.tlsOptions = {
             secureContext: context,
+            secureProtocol: 'TLSv1_2_method',
+            rejectUnauthorized: false,
         };
 
         this.responseParser = new ResponseParser();
@@ -69,8 +72,8 @@ export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClie
         if (!this.connected) {
             logDebug('was not connected');
             await this.connect();
+            logDebug('connected! continuing...');
         }
-        logDebug('connected! continuing...');
 
         if (tag === undefined) {
             tag = uuidv4();
@@ -110,7 +113,7 @@ export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClie
 
         const msg = JSON.stringify(message);
         logDebug('request handler about to write: ', msg);
-        this.socket?.write(msg, () => {
+        this.socket?.write(msg + '\n', () => {
             logDebug('sent request tag ', tag, ' successfully');
         });
 
@@ -126,7 +129,9 @@ export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClie
 
         return new Promise((resolve, reject) => {
             logDebug('about to connect');
-            this.socket = connect(this.port, this.host, this.tlsOptions);
+            this.socket = connect(this.port, this.host, this.tlsOptions, () => {
+                logDebug('connected!');
+            });
             this.socket.once('secureConnect', () => {
                 logDebug('securely connected');
                 this._onConnect(resolve);
@@ -134,6 +139,13 @@ export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClie
 
             this.socket.once('error', reject);
         });
+    }
+
+    public close() {
+        this.connected = false;
+        if (this.socket !== undefined) {
+            this.socket.destroy();
+        }
     }
 
     public async subscribe(
@@ -183,6 +195,7 @@ export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClie
         };
 
         function socketEnd(this: TLSSocket): void {
+            logDebug('client socket has ended');
             if (this) {
                 // Acknowledge to other end of the connection that the connection is ended.
                 this.end();
@@ -190,6 +203,7 @@ export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClie
         }
 
         function socketTimeout(this: TLSSocket): void {
+            logDebug('client socket has timed out');
             if (this) {
                 // Acknowledge to other end of the connection that the connection is ended.
                 this.end();
@@ -200,6 +214,7 @@ export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClie
         const clientInstance = this;
 
         function socketClose(this: TLSSocket): void {
+            logDebug('client socket has closed.');
             if (this) {
                 this.removeListener('error', socketError);
                 this.removeListener('close', socketClose);
@@ -215,6 +230,7 @@ export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClie
 
             clientInstance._empty();
             clientInstance.removeAllListeners('unsolicited');
+            this.emit('disconnected');
         }
 
         if (this.socket) {
@@ -250,7 +266,7 @@ export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClie
                     logDebug('tag ', tag, ' has a subscription');
                     sub(response);
                 } else {
-                    throw 'got message with unknown tag ' + tag;
+                    logDebug('ERROR was not expecting tag ', tag);
                 }
             }
         } else {
