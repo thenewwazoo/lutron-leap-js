@@ -11,10 +11,10 @@
     "homepage": "https://github.com/thenewwazoo/lutron-leap-js",
     "license": "GPL-3.0",
     "author": "Brandon Matthews <thenewwazoo@optimaltour.us>",
-    "main": "lib/index.js",
-    "types": "lib/index.d.ts",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
     "files": [
-        "lib/**/*"
+        "dist/**/*"
     ],
     "devDependencies": {
         "@types/debug": "^4.1.5",

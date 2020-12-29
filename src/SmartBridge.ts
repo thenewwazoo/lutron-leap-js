@@ -15,6 +15,7 @@ export class SmartBridge {
     // TODO need a way to do a reverse mDNS lookup so `id` here can come from the hostname
 
     constructor(private readonly bridgeID: string, private client: LeapClient) {
+        logDebug("new bridge", bridgeID, "being constructed");
         client.on('unsolicited', this._handleUnsolicited);
         client.on('disconnected', this._handleDisconnect);
 
