@@ -8,7 +8,7 @@ const log_debug = debug('leap:mock:tls');
 
 class MockedSocket extends EventEmitter {
     write(s, cb) {
-        log_debug('written to mocked socket: ', s);
+        log_debug('written to mocked socket:', s);
         writtenData.push(s);
         cb();
     }
@@ -18,7 +18,7 @@ let theSocket = new MockedSocket();
 let writtenData = [];
 
 function connect(port, host, options) {
-    log_debug('mocked connect called. host: ', host, ', port: ', port, ', options: ', options);
+    log_debug('mocked connect called. host:', host, ', port: ', port, ', options: ', options);
     if (theSocket === undefined) {
         log_debug('creating socket singleton');
         theSocket = new MockedSocket();
@@ -32,7 +32,7 @@ function __secureConnect() {
 }
 
 function __tickle(s) {
-    log_debug('tickling the socket with data: ', s);
+    log_debug('tickling the socket with data:', s);
     theSocket.emit('data', Buffer.from(s));
 }
 

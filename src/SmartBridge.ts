@@ -89,7 +89,7 @@ export class SmartBridge {
     }
 
     private _handleUnsolicited(response: Response) {
-        logDebug('bridge ', this.bridgeID, 'got unsolicited message:');
+        logDebug('bridge', this.bridgeID, 'got unsolicited message:');
         logDebug(response);
     }
 

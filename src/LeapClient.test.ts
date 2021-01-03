@@ -38,7 +38,7 @@ it('subscribe and receive', async () => {
     MockTLS.__secureConnect();
 
     const mockSubHandle = jest.fn((response: Response): void => {
-        logDebug('sub handler got called for tag ', response.Header.ClientTag);
+        logDebug('sub handler got called for tag', response.Header.ClientTag);
         expect(response.Header.ClientTag).toEqual(req_tag);
     });
 
@@ -103,7 +103,7 @@ it('unsolicited event', async () => {
     MockTLS.__secureConnect();
 
     const mockHandle = jest.fn((response: Response): void => {
-        logDebug('unsolicited response handler got called for tag ', response.Header.ClientTag);
+        logDebug('unsolicited response handler got called for tag', response.Header.ClientTag);
         expect(response.Header.ClientTag).toBeUndefined();
     });
 

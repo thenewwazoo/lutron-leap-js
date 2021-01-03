@@ -68,7 +68,7 @@ export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClie
         body?: Record<string, unknown>,
         tag?: string,
     ): Promise<Response> {
-        logDebug('new request incoming with tag ', tag);
+        logDebug('new request incoming with tag', tag);
         if (!this.connected) {
             logDebug('was not connected');
             await this.connect();
@@ -109,12 +109,12 @@ export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClie
             resolve: requestResolve,
             reject: requestReject,
         });
-        logDebug('added promise to inFlightRequests with tag key ', tag);
+        logDebug('added promise to inFlightRequests with tag key', tag);
 
         const msg = JSON.stringify(message);
-        logDebug('request handler about to write: ', msg);
+        logDebug('request handler about to write:', msg);
         this.socket?.write(msg + '\n', () => {
-            logDebug('sent request tag ', tag, ' successfully');
+            logDebug('sent request tag', tag, ' successfully');
         });
 
         setTimeout(() => requestReject(new Error("request timed out")), 5000);
@@ -162,7 +162,7 @@ export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClie
         return await this.request(communiqueType, url, body, _tag).then((response: Response) => {
             if (response.Header.StatusCode !== undefined && response.Header.StatusCode.isSuccessful()) {
                 this.taggedSubscriptions.set(_tag, callback);
-                logDebug('Subscribed to ', url, ' as ', _tag);
+                logDebug('Subscribed to', url, ' as ', _tag);
             }
 
             return { response, tag: _tag };
@@ -186,7 +186,7 @@ export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClie
         this.connected = true;
 
         const socketError = (err: Error): void => {
-            logDebug('socket error: ', err);
+            logDebug('socket error:', err);
             this._empty();
 
             if (this.socket) {
@@ -248,27 +248,27 @@ export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClie
 
     private readonly socketDataHandler = (data: Buffer): void => {
         const s = data.toString();
-        logDebug('got data from socket: ', s);
+        logDebug('got data from socket:', s);
         this.responseParser.handleData(s);
     };
 
     private _handleResponse(response: Response): void {
         const tag = response.Header.ClientTag;
         if (tag !== undefined) {
-            logDebug('got response to tag ', tag);
+            logDebug('got response to tag', tag);
             const arrow: MessageDetails = this.inFlightRequests.get(tag)!;
             if (arrow !== undefined) {
-                logDebug('tag ', tag, ' recognized as in-flight');
+                logDebug('tag', tag, ' recognized as in-flight');
                 this.inFlightRequests.delete(tag);
                 arrow.resolve(response);
             } else {
-                logDebug('tag ', tag, ' not in flight');
+                logDebug('tag', tag, ' not in flight');
                 const sub = this.taggedSubscriptions.get(tag);
                 if (sub !== undefined) {
-                    logDebug('tag ', tag, ' has a subscription');
+                    logDebug('tag', tag, ' has a subscription');
                     sub(response);
                 } else {
-                    logDebug('ERROR was not expecting tag ', tag);
+                    logDebug('ERROR was not expecting tag', tag);
                 }
             }
         } else {

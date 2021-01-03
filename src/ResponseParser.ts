@@ -14,8 +14,8 @@ export class ResponseParser extends (EventEmitter as new () => TypedEmitter<Resp
     private buffer = '';
 
     public handleData(data: string): void {
-        logDebug('handling data ', data);
-        logDebug('buffer is ', this.buffer);
+        logDebug('handling data', data);
+        logDebug('buffer is', this.buffer);
 
         data = this.buffer + data;
 
@@ -32,11 +32,11 @@ export class ResponseParser extends (EventEmitter as new () => TypedEmitter<Resp
 
         for (const line of lines.slice(0, len)) {
             try {
-                logDebug('parsing line ', line);
+                logDebug('parsing line', line);
                 const response = Response.fromJSON(JSON.parse(line));
                 this.emit('response', response);
             } catch (e) {
-                logDebug('malformed response: ', e, ' caused by ', line);
+                logDebug('malformed response:', e, ' caused by', line);
             }
         }
     }
