@@ -2,22 +2,31 @@ import debug from 'debug';
 
 import { LeapClient } from './LeapClient';
 import { Response } from './Messages';
-import { Device } from './MessageBodyTypes';
+import { OneDeviceDefinition, Device } from './MessageBodyTypes';
 
 const logDebug = debug('leap:bridge');
 export const LEAP_PORT = 8081;
 const PING_INTERVAL_MS = 60000;
 const PING_TIMEOUT_MS = 1000;
 
+export interface BridgeInfo {
+    firmwareRevision: string;
+    manufacturer: string;
+    model: string;
+    name: string;
+    serialNumber: string;
+}
+
 export class SmartBridge {
     private pingLooper!: ReturnType<typeof setTimeout>; // this is indeed definitely set in the constructor
 
-    // TODO need a way to do a reverse mDNS lookup so `id` here can come from the hostname
-
-    constructor(private readonly bridgeID: string, private client: LeapClient) {
+    constructor(
+        public readonly bridgeID: string,
+        private client: LeapClient
+    ) {
         logDebug("new bridge", bridgeID, "being constructed");
-        client.on('unsolicited', this._handleUnsolicited);
-        client.on('disconnected', this._handleDisconnect);
+        client.on('unsolicited', this._handleUnsolicited.bind(this));
+        client.on('disconnected', this._handleDisconnect.bind(this));
 
         this._setPingTimeout();
     }
@@ -49,24 +58,33 @@ export class SmartBridge {
         return await this.client.request('ReadRequest', '/server/1/status/ping');
     }
 
+    public async getBridgeInfo(): Promise<BridgeInfo> {
+        logDebug('getting bridge information');
+        const raw = await this.client.request('ReadRequest', '/device/1');
+        if ((raw.Body! as OneDeviceDefinition).Device) {
+            const device = (raw.Body! as OneDeviceDefinition).Device;
+            return {
+                firmwareRevision: device.FirmwareImage.Firmware.DisplayName,
+                manufacturer: "Lutron Electronics Co., Inc",
+                model: device.ModelNumber,
+                name: device.FullyQualifiedName.join(' '),
+                serialNumber: device.SerialNumber,
+            };
+
+        }
+        throw new Error("Got bad response to bridge info request")
+    }
+
     public async getDeviceInfo(): Promise<Device[]> {
-        logDebug('getting all device info');
+        logDebug('getting info about all devices');
         return new Promise((resolve, reject) => {
             const raw = this.client.request('ReadRequest', '/device').then((response: Response) => {
-                logDebug('0-0-0-0-0-0- WEE OO WEE OO -=-=-=-=-');
+                logDebug('all device info follows:');
                 logDebug(response);
                 // @ts-ignore
                 return response.Body!.Devices;
             });
             resolve(raw);
-            /*
-            if (raw.Header.StatusCode?.isSuccessful()) {
-                this.raw = raw.Body['Devices'];
-                resolve();
-            } else {
-                reject("failed to get device info");
-            }
-           */
         });
     }
 

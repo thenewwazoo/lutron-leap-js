@@ -1,6 +1,6 @@
 /* tslint:disable:max-classes-per-file */
 
-const debug = require('debug');
+import debug = require('debug');
 
 const logDebug = debug('leap:message:bodytype');
 
@@ -9,30 +9,36 @@ export class UnimplementedMessageBodyType {
 }
 
 export type MessageBodyType =
+    | 'OneDeviceDefinition'
     | 'MultipleDeviceDefinition'
     | 'OneZoneStatus'
     | 'OnePingResponse'
     | 'ExceptionDetail';
 
-class MultipleDeviceDefinition {
+export class OneDeviceDefinition {
+    Device!: Device;
+}
+
+export class MultipleDeviceDefinition {
     Devices: Device[] = [];
 }
 
-class OneZoneStatus {
+export class OneZoneStatus {
     ZoneStatus!: ZoneStatus;
 }
 
-class OnePingResponse {
+export class OnePingResponse {
     PingResponse!: {
         LEAPVersion: number;
     };
 }
 
-class ExceptionDetail {
+export class ExceptionDetail {
     Message = '';
 }
 
 export type BodyType =
+    | OneDeviceDefinition
     | MultipleDeviceDefinition
     | OneZoneStatus
     | OnePingResponse
@@ -42,6 +48,9 @@ export function parseBody(type: MessageBodyType, data: object): BodyType {
     logDebug('parsing body type', type, 'with data:', data);
     let theType;
     switch (type) {
+        case 'OneDeviceDefinition':
+            theType = OneDeviceDefinition;
+            break;
         case 'MultipleDeviceDefinition':
             theType = MultipleDeviceDefinition;
             break;

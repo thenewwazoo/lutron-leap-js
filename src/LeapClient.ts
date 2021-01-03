@@ -117,6 +117,8 @@ export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClie
             logDebug('sent request tag ', tag, ' successfully');
         });
 
+        setTimeout(() => requestReject(new Error("request timed out")), 5000);
+
         return requestPromise;
     }
 
