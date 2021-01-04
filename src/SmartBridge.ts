@@ -107,9 +107,9 @@ export class SmartBridge {
             {
                 Command: {
                     CommandType: "GoToTilt",
-                    Parameter: [
-                        { Type: "Level", Value: value, TiltParameters: "foobar" },
-                    ],
+                    TiltParameters: {
+                        Tilt: Math.round(value)
+                    },
                 }
             });
     }
@@ -123,7 +123,7 @@ export class SmartBridge {
             device.LocalZones[0].href + "/status",
         );
         // @ts-ignore
-        return resp.Body!.ZoneStatus.Level;
+        return Math.min(100, resp.Body!.ZoneStatus.Level * 2);
     }
 
     private _handleUnsolicited(response: Response) {

@@ -18,7 +18,7 @@ interface Message {
         ClientTag: string;
         Url: string;
     };
-    body?: Record<string, unknown>;
+    Body?: Record<string, unknown>;
 }
 
 interface MessageDetails {
@@ -101,7 +101,7 @@ export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClie
         };
 
         if (body !== undefined) {
-            message.body = body;
+            message.Body = body;
         }
 
         this.inFlightRequests.set(tag, {
