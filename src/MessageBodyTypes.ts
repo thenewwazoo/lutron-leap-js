@@ -11,6 +11,7 @@ export class UnimplementedMessageBodyType {
 export type MessageBodyType =
     | 'OneDeviceDefinition'
     | 'MultipleDeviceDefinition'
+    | 'OneZoneDefinition'
     | 'OneZoneStatus'
     | 'OnePingResponse'
     | 'ExceptionDetail';
@@ -21,6 +22,10 @@ export class OneDeviceDefinition {
 
 export class MultipleDeviceDefinition {
     Devices: Device[] = [];
+}
+
+export class OneZoneDefinition {
+    ZoneDefinition!: ZoneDefinition;
 }
 
 export class OneZoneStatus {
@@ -123,3 +128,11 @@ type ZoneStatus = Href & {
     Zone: Href;
     StatusAccuracy: 'Good';
 };
+
+type ZoneDefinition = Href & {
+    Name: string,
+    ControlType: string,
+    Category: { Type: string, IsLight: boolean },
+    Device: Href,
+    AssociatedFacade: Href,
+  }

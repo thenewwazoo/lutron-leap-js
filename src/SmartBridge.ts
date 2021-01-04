@@ -88,6 +88,44 @@ export class SmartBridge {
         });
     }
 
+    // This takes a device (presumed to be a SerenaTiltOnlyWoodBlind) and sets
+    // its tilt. `value` can range from 0-100, but n.b. 50 is flat. The Homekit
+    // Window Covering's required "Position" characteristic expects 0 to be
+    // "fully closed" and 100 to be "fully open". As such, we constrain the
+    // tilt angle to [-90,0] degrees by scaling `value` after the fact.
+    public async setBlindsTilt(
+        device: Device,
+        value: number,
+    ): Promise<void> {
+        value = value / 2;
+
+        const href = device.LocalZones[0].href + "/commandprocessor";
+        logDebug("setting href", href, "to value", value);
+        await this.client.request(
+            "CreateRequest",
+            href,
+            {
+                Command: {
+                    CommandType: "GoToTilt",
+                    Parameter: [
+                        { Type: "Level", Value: value, TiltParameters: "foobar" },
+                    ],
+                }
+            });
+    }
+
+    public async readBlindsTilt(
+        device: Device,
+    ): Promise<number> {
+        logDebug("reding tilt for device", device.FullyQualifiedName.join(' '));
+        const resp = await this.client.request(
+            "ReadRequest",
+            device.LocalZones[0].href + "/status",
+        );
+        // @ts-ignore
+        return resp.Body!.ZoneStatus.Level;
+    }
+
     private _handleUnsolicited(response: Response) {
         logDebug('bridge', this.bridgeID, 'got unsolicited message:');
         logDebug(response);
