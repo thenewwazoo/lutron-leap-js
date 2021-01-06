@@ -1,12 +1,15 @@
 {
     "name": "lutron-leap",
-    "version": "0.1.0",
-    "description": "A client library for Lutron Caseta Smart Bridge devices",
+    "version": "1.0.0",
+    "description": "A LEAP library for Lutron Caseta Smart Bridge 2 devices",
     "keywords": [
         "lutron",
         "caseta",
         "caséta",
-        "smartbridge"
+        "smartbridge",
+        "lutron-leap",
+        "lutron-caseta",
+        "lutron-smart-bridge"
     ],
     "homepage": "https://github.com/thenewwazoo/lutron-leap-js",
     "license": "GPL-3.0",

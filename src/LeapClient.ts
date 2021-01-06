@@ -25,6 +25,7 @@ interface MessageDetails {
     message: Message;
     resolve: (message: Response) => void;
     reject: (err: Error) => void;
+    timeout: ReturnType<typeof setTimeout>;
 }
 
 interface LeapClientEvents {
@@ -104,10 +105,16 @@ export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClie
             message.Body = body;
         }
 
+        const timeout = setTimeout(() => {
+            this.inFlightRequests.delete(tag!);
+            requestReject(new Error("request timed out"));
+        }, 3000);
+
         this.inFlightRequests.set(tag, {
             message,
             resolve: requestResolve,
             reject: requestReject,
+            timeout,
         });
         logDebug('added promise to inFlightRequests with tag key', tag);
 
@@ -116,8 +123,6 @@ export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClie
         this.socket?.write(msg + '\n', () => {
             logDebug('sent request tag', tag, ' successfully');
         });
-
-        setTimeout(() => requestReject(new Error("request timed out")), 5000);
 
         return requestPromise;
     }
@@ -259,6 +264,7 @@ export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClie
             const arrow: MessageDetails = this.inFlightRequests.get(tag)!;
             if (arrow !== undefined) {
                 logDebug('tag', tag, ' recognized as in-flight');
+                clearTimeout(arrow.timeout);
                 this.inFlightRequests.delete(tag);
                 arrow.resolve(response);
             } else {

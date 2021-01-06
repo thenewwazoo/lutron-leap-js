@@ -1,10 +1,13 @@
 import debug from 'debug';
+import { EventEmitter } from 'events';
 
 import { LeapClient } from './LeapClient';
 import { Response } from './Messages';
-import { OneDeviceDefinition, Device } from './MessageBodyTypes';
+import { OneZoneStatus, MultipleDeviceDefinition, OneDeviceDefinition, Device } from './MessageBodyTypes';
 
+import TypedEmitter from 'typed-emitter';
 const logDebug = debug('leap:bridge');
+
 export const LEAP_PORT = 8081;
 const PING_INTERVAL_MS = 60000;
 const PING_TIMEOUT_MS = 1000;
@@ -17,13 +20,19 @@ export interface BridgeInfo {
     serialNumber: string;
 }
 
-export class SmartBridge {
+interface SmartBridgeEvents {
+    unsolicited: (bridgeID: string, response: Response) => void;
+    disconnected: () => void;
+}
+
+export class SmartBridge extends (EventEmitter as new () => TypedEmitter<SmartBridgeEvents>) {
     private pingLooper!: ReturnType<typeof setTimeout>; // this is indeed definitely set in the constructor
 
     constructor(
         public readonly bridgeID: string,
         private client: LeapClient
     ) {
+        super();
         logDebug("new bridge", bridgeID, "being constructed");
         client.on('unsolicited', this._handleUnsolicited.bind(this));
         client.on('disconnected', this._handleDisconnect.bind(this));
@@ -77,31 +86,22 @@ export class SmartBridge {
 
     public async getDeviceInfo(): Promise<Device[]> {
         logDebug('getting info about all devices');
-        return new Promise((resolve, reject) => {
-            const raw = this.client.request('ReadRequest', '/device').then((response: Response) => {
-                logDebug('all device info follows:');
-                logDebug(response);
-                // @ts-ignore
-                return response.Body!.Devices;
-            });
-            resolve(raw);
-        });
+        const raw = await this.client.request('ReadRequest', '/device');
+        if ((raw.Body! as MultipleDeviceDefinition).Devices) {
+            const devices = (raw.Body! as MultipleDeviceDefinition).Devices;
+            return devices;
+        }
+        throw new Error("got bad response to all device list request");
     }
 
-    // This takes a device (presumed to be a SerenaTiltOnlyWoodBlind) and sets
-    // its tilt. `value` can range from 0-100, but n.b. 50 is flat. The Homekit
-    // Window Covering's required "Position" characteristic expects 0 to be
-    // "fully closed" and 100 to be "fully open". As such, we constrain the
-    // tilt angle to [-90,0] degrees by scaling `value` after the fact.
     public async setBlindsTilt(
         device: Device,
         value: number,
     ): Promise<void> {
-        value = value / 2;
 
         const href = device.LocalZones[0].href + "/commandprocessor";
         logDebug("setting href", href, "to value", value);
-        await this.client.request(
+        this.client.request(
             "CreateRequest",
             href,
             {
@@ -117,18 +117,19 @@ export class SmartBridge {
     public async readBlindsTilt(
         device: Device,
     ): Promise<number> {
-        logDebug("reding tilt for device", device.FullyQualifiedName.join(' '));
         const resp = await this.client.request(
             "ReadRequest",
             device.LocalZones[0].href + "/status",
         );
-        // @ts-ignore
-        return Math.min(100, resp.Body!.ZoneStatus.Level * 2);
+        const val = (resp.Body! as OneZoneStatus).ZoneStatus.Tilt;
+        logDebug("read tilt for device", device.FullyQualifiedName.join(' '), "at", val);
+        return val;
     }
 
     private _handleUnsolicited(response: Response) {
         logDebug('bridge', this.bridgeID, 'got unsolicited message:');
         logDebug(response);
+        this.emit("unsolicited", this.bridgeID, response);
     }
 
     private _handleDisconnect(): void {

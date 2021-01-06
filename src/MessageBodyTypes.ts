@@ -122,11 +122,15 @@ type FanSpeedType =
     | 'Off';
 
 type ZoneStatus = Href & {
+    CCOLevel: 'Open' | 'Closed';
     Level: number;
     SwitchedLevel: 'On' | 'Off';
     FanSpeed: FanSpeedType;
     Zone: Href;
     StatusAccuracy: 'Good';
+    AssociatedArea: Href;
+    Availability: 'Available' | 'Unavailable' | 'Mixed' | 'Unknown';
+    Tilt: number,
 };
 
 type ZoneDefinition = Href & {
