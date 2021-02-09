@@ -14,6 +14,7 @@ export type MessageBodyType =
     | 'OneZoneDefinition'
     | 'OneZoneStatus'
     | 'OnePingResponse'
+    | 'OneButtonGroupDefinition'
     | 'ExceptionDetail';
 
 export class OneDeviceDefinition {
@@ -38,6 +39,10 @@ export class OnePingResponse {
     };
 }
 
+export class OneButtonGroupDefinition {
+    ButtonGroup!: ButtonGroup;
+}
+
 export class ExceptionDetail {
     Message = '';
 }
@@ -47,6 +52,7 @@ export type BodyType =
     | MultipleDeviceDefinition
     | OneZoneStatus
     | OnePingResponse
+    | OneButtonGroupDefinition
     | ExceptionDetail;
 
 export function parseBody(type: MessageBodyType, data: object): BodyType {
@@ -68,6 +74,9 @@ export function parseBody(type: MessageBodyType, data: object): BodyType {
         case 'OnePingResponse':
             theType = OnePingResponse;
             break;
+        case 'OneButtonGroupDefinition':
+            theType = OneButtonGroupDefinition;
+            break;
         default:
             throw new UnimplementedMessageBodyType(type as string);
     }
@@ -76,6 +85,66 @@ export function parseBody(type: MessageBodyType, data: object): BodyType {
 
 type Href = {
     href: string;
+};
+
+type PhaseSetting = Href & {
+    Direction: string;
+}
+
+type TuningSetting = Href & {
+    HighEndTrim: number;
+    LowEndTrim: number;
+}
+
+export type Zone  = Href & {
+    AssociatedArea: Href;
+    ControlType: string;
+    Name: string;
+    PhaseSettings: PhaseSetting;
+    SortOrder: number;
+    TuningSettings: TuningSetting;
+}
+
+export type AffectedZone = Href & {
+    ButtonGroup: ButtonGroup;
+    Zone: Zone;
+}
+
+type AdvancedToggleProperties = {
+    PrimaryPreset: Href;
+    SecondaryPreset: Href;
+}
+
+type DualActionProperties = {
+    PressPreset: Href;
+    ReleasePreset: Href;
+}
+
+type ProgrammingModel = Href & {
+    AdvancedToggleProperties: AdvancedToggleProperties;
+    DualActionProperties: DualActionProperties;
+    Name: string;
+    Parent: Href;
+    Preset: Href;
+    ProgrammingModelType: string;
+}
+
+type Button = Href & {
+    AssociatedLED: Href;
+    ButtonNumber: number;
+    Engraving: { Text: string };
+    Name: string;
+    Parent: Href;
+    ProgrammingModel: ProgrammingModel;
+}
+
+export type ButtonGroup = Href & {
+    AffectedZones: AffectedZone[];
+    Buttons: Button[];
+    Parent: Device;
+    ProgrammingType: string;
+    SortOrder: number;
+    StopIfMoving: string;
 };
 
 export type Device = Href & {
