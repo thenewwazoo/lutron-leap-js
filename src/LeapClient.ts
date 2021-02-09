@@ -107,7 +107,7 @@ export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClie
 
         const timeout = setTimeout(() => {
             this.inFlightRequests.delete(tag!);
-            requestReject(new Error("request timed out"));
+            requestReject(new Error("request with tag" + tag + "timed out"));
         }, 3000);
 
         this.inFlightRequests.set(tag, {

@@ -30,7 +30,7 @@ export class SmartBridge extends (EventEmitter as new () => TypedEmitter<SmartBr
 
     constructor(
         public readonly bridgeID: string,
-        private client: LeapClient
+        public client: LeapClient
     ) {
         super();
         logDebug("new bridge", bridgeID, "being constructed");
@@ -133,6 +133,6 @@ export class SmartBridge extends (EventEmitter as new () => TypedEmitter<SmartBr
     }
 
     private _handleDisconnect(): void {
-        // do things, probably
+        this.client.close();
     }
 }
