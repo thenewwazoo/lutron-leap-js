@@ -129,10 +129,17 @@ export class SmartBridge extends (EventEmitter as new () => TypedEmitter<SmartBr
     private _handleUnsolicited(response: Response) {
         logDebug('bridge', this.bridgeID, 'got unsolicited message:');
         logDebug(response);
-        this.emit("unsolicited", this.bridgeID, response);
+        this.emit('unsolicited', this.bridgeID, response);
     }
 
     private _handleDisconnect(): void {
+        logDebug('bridge id', this.bridgeID, 'disconnected.');
+        this.close();
+    }
+
+    public close(): void {
+        logDebug('bridge id', this.bridgeID, 'closing');
+        clearTimeout(this.pingLooper);
         this.client.close();
     }
 }
