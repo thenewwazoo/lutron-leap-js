@@ -165,7 +165,9 @@ export class BridgeFinder extends (EventEmitter as new () => TypedEmitter<Bridge
         const hostname = await this.getHostnameFromIP(ipaddr);
         logDebug('got hostname from IP:', hostname);
         try {
-            bridgeID = hostname!.match(/lutron-(?<id>\w+)\.local/)!.groups!.id; // may fail, don't care
+            // If the format of the hub hostname changes, this match can break,
+            // and will appear as your credentials not working any longer
+            bridgeID = hostname!.match(/[Ll]utron-(?<id>\w+)\.local/)!.groups!.id;
         } catch {
             bridgeID = ipaddr.replace(".", "_");
         }
@@ -176,7 +178,7 @@ export class BridgeFinder extends (EventEmitter as new () => TypedEmitter<Bridge
             const client = new LeapClient(ipaddr, LEAP_PORT, these.ca, these.key, these.cert);
             return new SmartBridge(bridgeID, client);
         } else {
-            throw new Error("no credentials for bridge ID" + bridgeID);
+            throw new Error("no credentials for bridge ID " + bridgeID);
         }
     }
 }
