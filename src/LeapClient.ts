@@ -34,7 +34,7 @@ interface LeapClientEvents {
 }
 
 export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClientEvents>) {
-    private connected = false;
+    private connected: Promise<void> | null;
 
     private socket?: TLSSocket;
     private readonly tlsOptions: ConnectionOptions;
@@ -47,6 +47,7 @@ export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClie
     constructor(private readonly host: string, private readonly port: number, ca: string, key: string, cert: string) {
         super();
         logDebug('new LeapClient being constructed');
+        this.connected = null;
         const context = createSecureContext({
             ca,
             key,
@@ -69,12 +70,7 @@ export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClie
         body?: Record<string, unknown>,
         tag?: string,
     ): Promise<Response> {
-        logDebug('new request incoming with tag', tag);
-        if (!this.connected) {
-            logDebug('was not connected');
-            await this.connect();
-            logDebug('connected! continuing...');
-        }
+        await this.connect();
 
         if (tag === undefined) {
             tag = uuidv4();
@@ -107,7 +103,7 @@ export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClie
 
         const timeout = setTimeout(() => {
             this.inFlightRequests.delete(tag!);
-            requestReject(new Error("request with tag" + tag + "timed out"));
+            requestReject(new Error('request with tag' + tag + 'timed out'));
         }, 3000);
 
         this.inFlightRequests.set(tag, {
@@ -128,28 +124,31 @@ export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClie
     }
 
     public connect(): Promise<void> {
-        if (this.connected) {
-            logDebug('oops already connected');
-            return Promise.resolve();
+        if (!this.connected) {
+            logDebug('needs to connect');
+            this.connected = new Promise((resolve, reject) => {
+                logDebug('about to connect');
+                this.socket = connect(this.port, this.host, this.tlsOptions, () => {
+                    logDebug('connected!');
+                });
+                this.socket.once('secureConnect', () => {
+                    logDebug('securely connected');
+                    this._onConnect(resolve);
+                });
+
+                this.socket.once('error', (e) => {
+                    logDebug('connection failed: ', e);
+                    this.connected = null;
+                    reject(e);
+                });
+            });
         }
-        logDebug('needs to connect');
 
-        return new Promise((resolve, reject) => {
-            logDebug('about to connect');
-            this.socket = connect(this.port, this.host, this.tlsOptions, () => {
-                logDebug('connected!');
-            });
-            this.socket.once('secureConnect', () => {
-                logDebug('securely connected');
-                this._onConnect(resolve);
-            });
-
-            this.socket.once('error', reject);
-        });
+        return this.connected;
     }
 
     public close() {
-        this.connected = false;
+        this.connected = null;
         if (this.socket !== undefined) {
             this.socket.destroy();
         }
@@ -187,8 +186,6 @@ export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClie
             this.socket.removeAllListeners('connect');
             this.socket.removeAllListeners('secureConnect');
         }
-
-        this.connected = true;
 
         const socketError = (err: Error): void => {
             logDebug('socket error:', err);
@@ -231,7 +228,7 @@ export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClie
             }
 
             if (this === clientInstance.socket) {
-                clientInstance.connected = false;
+                clientInstance.connected = null;
                 delete clientInstance.socket;
             }
 
@@ -274,7 +271,7 @@ export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClie
                     logDebug('tag', tag, ' has a subscription');
                     sub(response);
                 } else {
-                    logDebug('ERROR was not expecting tag', tag);
+                    logDebug('ERROR was not expecting tag ', tag);
                 }
             }
         } else {

@@ -60,8 +60,7 @@ it('subscribe and receive', async () => {
 it('round-trip in-flight', async () => {
     logDebug('STARTING: round-trip in-flight');
 
-    const request =
-        `{"CommuniqueType":"ReadRequest","Header":{"ClientTag":"d2018137-c87f-4315-ab04-e727c4fc973b","Url":"/device"}}
+    const request = `{"CommuniqueType":"ReadRequest","Header":{"ClientTag":"d2018137-c87f-4315-ab04-e727c4fc973b","Url":"/device"}}
 `;
     const req_commtype = 'ReadRequest';
     const req_url = '/device';

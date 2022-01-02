@@ -3,7 +3,16 @@ import { EventEmitter } from 'events';
 
 import { LeapClient } from './LeapClient';
 import { Response } from './Messages';
-import { OneZoneStatus, MultipleDeviceDefinition, OneDeviceDefinition, Device } from './MessageBodyTypes';
+import {
+    OneButtonDefinition,
+    OneButtonGroupDefinition,
+    OneZoneStatus,
+    MultipleDeviceDefinition,
+    OneDeviceDefinition,
+    Device,
+    ButtonGroup,
+    Button,
+} from './MessageBodyTypes';
 
 import TypedEmitter from 'typed-emitter';
 const logDebug = debug('leap:bridge');
@@ -28,12 +37,9 @@ interface SmartBridgeEvents {
 export class SmartBridge extends (EventEmitter as new () => TypedEmitter<SmartBridgeEvents>) {
     private pingLooper!: ReturnType<typeof setTimeout>; // this is indeed definitely set in the constructor
 
-    constructor(
-        public readonly bridgeID: string,
-        public client: LeapClient
-    ) {
+    constructor(public readonly bridgeID: string, public client: LeapClient) {
         super();
-        logDebug("new bridge", bridgeID, "being constructed");
+        logDebug('new bridge', bridgeID, 'being constructed');
         client.on('unsolicited', this._handleUnsolicited.bind(this));
         client.on('disconnected', this._handleDisconnect.bind(this));
 
@@ -54,13 +60,15 @@ export class SmartBridge extends (EventEmitter as new () => TypedEmitter<SmartBr
             }, PING_TIMEOUT_MS);
         });
 
-        Promise.race([this.ping(), timeout]).then(() => {
-            clearTimeout(this.pingLooper);
-            this._setPingTimeout();
-        }).catch(e => {
-            logDebug(e);
-            this.client.close();
-        });
+        Promise.race([this.ping(), timeout])
+            .then(() => {
+                clearTimeout(this.pingLooper);
+                this._setPingTimeout();
+            })
+            .catch((e) => {
+                logDebug(e);
+                this.client.close();
+            });
     }
 
     public async ping(): Promise<Response> {
@@ -74,14 +82,13 @@ export class SmartBridge extends (EventEmitter as new () => TypedEmitter<SmartBr
             const device = (raw.Body! as OneDeviceDefinition).Device;
             return {
                 firmwareRevision: device.FirmwareImage.Firmware.DisplayName,
-                manufacturer: "Lutron Electronics Co., Inc",
+                manufacturer: 'Lutron Electronics Co., Inc',
                 model: device.ModelNumber,
                 name: device.FullyQualifiedName.join(' '),
                 serialNumber: device.SerialNumber,
             };
-
         }
-        throw new Error("Got bad response to bridge info request")
+        throw new Error('Got bad response to bridge info request');
     }
 
     public async getDeviceInfo(): Promise<Device[]> {
@@ -91,39 +98,53 @@ export class SmartBridge extends (EventEmitter as new () => TypedEmitter<SmartBr
             const devices = (raw.Body! as MultipleDeviceDefinition).Devices;
             return devices;
         }
-        throw new Error("got bad response to all device list request");
+        throw new Error('got bad response to all device list request');
     }
 
-    public async setBlindsTilt(
-        device: Device,
-        value: number,
-    ): Promise<void> {
-
-        const href = device.LocalZones[0].href + "/commandprocessor";
-        logDebug("setting href", href, "to value", value);
-        this.client.request(
-            "CreateRequest",
-            href,
-            {
-                Command: {
-                    CommandType: "GoToTilt",
-                    TiltParameters: {
-                        Tilt: Math.round(value)
-                    },
-                }
-            });
+    public async setBlindsTilt(device: Device, value: number): Promise<void> {
+        const href = device.LocalZones[0].href + '/commandprocessor';
+        logDebug('setting href', href, 'to value', value);
+        this.client.request('CreateRequest', href, {
+            Command: {
+                CommandType: 'GoToTilt',
+                TiltParameters: {
+                    Tilt: Math.round(value),
+                },
+            },
+        });
     }
 
-    public async readBlindsTilt(
-        device: Device,
-    ): Promise<number> {
-        const resp = await this.client.request(
-            "ReadRequest",
-            device.LocalZones[0].href + "/status",
-        );
+    public async readBlindsTilt(device: Device): Promise<number> {
+        const resp = await this.client.request('ReadRequest', device.LocalZones[0].href + '/status');
         const val = (resp.Body! as OneZoneStatus).ZoneStatus.Tilt;
-        logDebug("read tilt for device", device.FullyQualifiedName.join(' '), "at", val);
+        logDebug('read tilt for device', device.FullyQualifiedName.join(' '), 'at', val);
         return val;
+    }
+
+    public async getButtonGroupFromDevice(device: Device): Promise<ButtonGroup> {
+        const raw = await this.client.request('ReadRequest', device.ButtonGroups[0].href);
+
+        if ((raw.Body! as OneButtonGroupDefinition).ButtonGroup) {
+            return (raw.Body! as OneButtonGroupDefinition).ButtonGroup;
+        }
+
+        throw new Error('unable to get button group');
+    }
+
+    public async getButtonsFromGroup(bgroup: ButtonGroup): Promise<Button[]> {
+        const buttons = new Array();
+
+        for (const button of bgroup.Buttons) {
+            buttons.push(
+                this.client.request('ReadRequest', button.href).then((resp: Response) => {
+                    if ((resp.Body! as OneButtonDefinition).Button) {
+                        return (resp.Body! as OneButtonDefinition).Button;
+                    }
+                    throw new Error('unable to get button');
+                }),
+            );
+        }
+        return Promise.all(buttons);
     }
 
     private _handleUnsolicited(response: Response) {

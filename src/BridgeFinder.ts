@@ -13,19 +13,20 @@ import { LeapClient } from './LeapClient';
 const logDebug = debug('leap:protocol:discovery');
 
 interface BridgeFinderEvents {
-    'discovered': (bridge: SmartBridge) => void;
+    discovered: (bridge: SmartBridge) => void;
+    failed: (error: Error) => void;
 }
 
 type HostAndPort = {
-    host: string,
-    port: number,
-}
+    host: string;
+    port: number;
+};
 
 export type SecretStorage = {
-    ca: string,
-    key: string,
-    cert: string,
-}
+    ca: string;
+    key: string;
+    cert: string;
+};
 
 export class BridgeFinder extends (EventEmitter as new () => TypedEmitter<BridgeFinderEvents>) {
     private discovery: MDNSServiceDiscovery;
@@ -41,13 +42,15 @@ export class BridgeFinder extends (EventEmitter as new () => TypedEmitter<Bridge
             protocol: Protocol.TCP,
         });
         this.discovery.onAvailable((svc: MDNSService) => {
-            this.handleDiscovery(svc).then((bridge: SmartBridge) => {
-                this.emit("discovered", bridge);
-            }).catch((e) => {
-                logDebug("failed to handle discovery:", e);
-            });
+            this.handleDiscovery(svc)
+                .then((bridge: SmartBridge) => {
+                    this.emit('discovered', bridge);
+                })
+                .catch((e) => {
+                    logDebug('failed to handle discovery:', e);
+                    this.emit('failed', e);
+                });
         });
-
     }
 
     public destroy(): void {
@@ -66,19 +69,20 @@ export class BridgeFinder extends (EventEmitter as new () => TypedEmitter<Bridge
             const _ip = hostandport.host;
             try {
                 const addr = new ipaddress.Address6(_ip);
-                if (!addr.isLinkLocal() && !addr.isLoopback()) { // TODO is this sufficient?
+                if (!addr.isLinkLocal() && !addr.isLoopback()) {
+                    // TODO is this sufficient?
                     return _ip;
                     break;
                 }
             } catch (e) {
                 // try again, but as ipv4
-                logDebug("was not ipv6:", e);
+                logDebug('was not ipv6:', e);
                 try {
                     const _ = new ipaddress.Address4(_ip);
                     return _ip;
                 } catch (e) {
                     // okay, apparently it's some garbage. log it and move on
-                    logDebug('could not parse HostAndPort', hostandport, "because", e);
+                    logDebug('could not parse HostAndPort', hostandport, 'because', e);
                 }
             }
         }
@@ -88,16 +92,16 @@ export class BridgeFinder extends (EventEmitter as new () => TypedEmitter<Bridge
 
     private getHostnameFromIP(ip: string): Promise<string | undefined> {
         // n.b. this must not end with a dot. see https://github.com/mafintosh/dns-packet/issues/62
-        const reversed = ip.split('.').reverse().join(".").concat(".in-addr.arpa");
+        const reversed = ip.split('.').reverse().join('.').concat('.in-addr.arpa');
         const _id = Math.floor(Math.random() * (65535 - 1 + 1)) + 1;
 
-        let lookupResolve: (info: string) => void = (info: string)  => {
+        let lookupResolve: (info: string) => void = (info: string) => {
             // this gets replaced
-        }
+        };
 
         let lookupReject: (err: Error) => void = (err: Error) => {
             // this gets replaced
-        }
+        };
 
         const lookupPromise = new Promise<string>((resolve, reject) => {
             lookupResolve = resolve;
@@ -110,7 +114,7 @@ export class BridgeFinder extends (EventEmitter as new () => TypedEmitter<Bridge
             port: 0,
         });
 
-        const timeout = setTimeout(lookupReject, 1000, "got tired of waiting");
+        const timeout = setTimeout(lookupReject, 1000, 'got tired of waiting');
 
         resolver.on('response', (packet: any) => {
             if (packet.id === _id) {
@@ -121,35 +125,38 @@ export class BridgeFinder extends (EventEmitter as new () => TypedEmitter<Bridge
 
         // TODO this might not be the minimal argument possible
         // see https://github.com/mafintosh/multicast-dns/issues/13
-        resolver.query({
-            // tslint:disable:no-bitwise
-            flags: dnspacket.RECURSION_DESIRED | dnspacket.AUTHENTIC_DATA,
-            id: _id,
-            questions: [
-                {
-                    name: reversed,
-                    type: 'PTR',
-                    class: 'IN'
-                },
-            ],
-            additionals: [
-                {
-                    name: '.',
-                    type: 'OPT',
-                    udpPayloadSize: 0x1000,
-                },
-            ],
-        }, {
-                      port: 5353,
-                      address: "224.0.0.251",
-        });
+        resolver.query(
+            {
+                // tslint:disable:no-bitwise
+                flags: dnspacket.RECURSION_DESIRED | dnspacket.AUTHENTIC_DATA,
+                id: _id,
+                questions: [
+                    {
+                        name: reversed,
+                        type: 'PTR',
+                        class: 'IN',
+                    },
+                ],
+                additionals: [
+                    {
+                        name: '.',
+                        type: 'OPT',
+                        udpPayloadSize: 0x1000,
+                    },
+                ],
+            },
+            {
+                port: 5353,
+                address: '224.0.0.251',
+            },
+        );
 
         return lookupPromise;
     }
 
     private async handleDiscovery(svc: MDNSService): Promise<SmartBridge> {
         if (svc.data.get('systype') !== 'SmartBridge') {
-            logDebug("invalid responder was", svc);
+            logDebug('invalid responder was', svc);
             throw new Error('invalid responder to discovery request');
         }
 
@@ -169,16 +176,17 @@ export class BridgeFinder extends (EventEmitter as new () => TypedEmitter<Bridge
             // and will appear as your credentials not working any longer
             bridgeID = hostname!.match(/[Ll]utron-(?<id>\w+)\.local/)!.groups!.id;
         } catch {
-            bridgeID = ipaddr.replace(".", "_");
+            bridgeID = ipaddr.replace('.', '_');
         }
         logDebug('extracted bridge ID:', bridgeID);
 
         if (this.secrets.has(bridgeID)) {
             const these = this.secrets.get(bridgeID)!;
             const client = new LeapClient(ipaddr, LEAP_PORT, these.ca, these.key, these.cert);
+            await client.connect();
             return new SmartBridge(bridgeID, client);
         } else {
-            throw new Error("no credentials for bridge ID " + bridgeID);
+            throw new Error('no credentials for bridge ID ' + bridgeID);
         }
     }
 }

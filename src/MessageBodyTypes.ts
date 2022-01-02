@@ -1,6 +1,7 @@
 /* tslint:disable:max-classes-per-file */
 
 import debug = require('debug');
+import util = require('util');
 
 const logDebug = debug('leap:message:bodytype');
 
@@ -15,6 +16,8 @@ export type MessageBodyType =
     | 'OneZoneStatus'
     | 'OnePingResponse'
     | 'OneButtonGroupDefinition'
+    | 'OneButtonDefinition'
+    | 'OneButtonStatusEvent'
     | 'ExceptionDetail';
 
 export class OneDeviceDefinition {
@@ -43,6 +46,14 @@ export class OneButtonGroupDefinition {
     ButtonGroup!: ButtonGroup;
 }
 
+export class OneButtonDefinition {
+    Button!: Button;
+}
+
+export class OneButtonStatusEvent {
+    ButtonStatus!: ButtonStatus;
+}
+
 export class ExceptionDetail {
     Message = '';
 }
@@ -53,10 +64,12 @@ export type BodyType =
     | OneZoneStatus
     | OnePingResponse
     | OneButtonGroupDefinition
+    | OneButtonDefinition
+    | OneButtonStatusEvent
     | ExceptionDetail;
 
 export function parseBody(type: MessageBodyType, data: object): BodyType {
-    logDebug('parsing body type', type, 'with data:', data);
+    logDebug('parsing body type', type, 'with data:', util.inspect(data, { depth: null }));
     let theType;
     switch (type) {
         case 'OneDeviceDefinition':
@@ -77,10 +90,16 @@ export function parseBody(type: MessageBodyType, data: object): BodyType {
         case 'OneButtonGroupDefinition':
             theType = OneButtonGroupDefinition;
             break;
+        case 'OneButtonDefinition':
+            theType = OneButtonDefinition;
+            break;
+        case 'OneButtonStatusEvent':
+            theType = OneButtonStatusEvent;
+            break;
         default:
             throw new UnimplementedMessageBodyType(type as string);
     }
-    return Object.assign(new theType, data);
+    return Object.assign(new theType(), data);
 }
 
 type Href = {
@@ -89,36 +108,36 @@ type Href = {
 
 type PhaseSetting = Href & {
     Direction: string;
-}
+};
 
 type TuningSetting = Href & {
     HighEndTrim: number;
     LowEndTrim: number;
-}
+};
 
-export type Zone  = Href & {
+export type Zone = Href & {
     AssociatedArea: Href;
     ControlType: string;
     Name: string;
     PhaseSettings: PhaseSetting;
     SortOrder: number;
     TuningSettings: TuningSetting;
-}
+};
 
 export type AffectedZone = Href & {
     ButtonGroup: ButtonGroup;
     Zone: Zone;
-}
+};
 
 type AdvancedToggleProperties = {
     PrimaryPreset: Href;
     SecondaryPreset: Href;
-}
+};
 
 type DualActionProperties = {
     PressPreset: Href;
     ReleasePreset: Href;
-}
+};
 
 type ProgrammingModel = Href & {
     AdvancedToggleProperties: AdvancedToggleProperties;
@@ -127,16 +146,16 @@ type ProgrammingModel = Href & {
     Parent: Href;
     Preset: Href;
     ProgrammingModelType: string;
-}
+};
 
-type Button = Href & {
+export type Button = Href & {
     AssociatedLED: Href;
     ButtonNumber: number;
     Engraving: { Text: string };
     Name: string;
     Parent: Href;
     ProgrammingModel: ProgrammingModel;
-}
+};
 
 export type ButtonGroup = Href & {
     AffectedZones: AffectedZone[];
@@ -147,6 +166,11 @@ export type ButtonGroup = Href & {
     StopIfMoving: string;
 };
 
+export type ButtonStatus = Href & {
+    Button: Href;
+    ButtonEvent: { EventType: 'Press' | 'Release' | 'LongHold' };
+};
+
 export type Device = Href & {
     Name: string;
     FullyQualifiedName: string[];
@@ -154,6 +178,7 @@ export type Device = Href & {
     SerialNumber: string;
     ModelNumber: string;
     DeviceType: string;
+    ButtonGroups: Href[];
     LocalZones: Href[];
     AssociatedArea: Href;
     OccupancySensors: Href[];
@@ -176,19 +201,11 @@ export type Device = Href & {
             Utc: string;
         };
     };
-
 };
 
-type OnOrOff =
-    | 'On'
-    | 'Off';
+type OnOrOff = 'On' | 'Off';
 
-type FanSpeedType =
-    | 'High'
-    | 'MediumHigh'
-    | 'Medium'
-    | 'Low'
-    | 'Off';
+type FanSpeedType = 'High' | 'MediumHigh' | 'Medium' | 'Low' | 'Off';
 
 type ZoneStatus = Href & {
     CCOLevel: 'Open' | 'Closed';
@@ -199,13 +216,13 @@ type ZoneStatus = Href & {
     StatusAccuracy: 'Good';
     AssociatedArea: Href;
     Availability: 'Available' | 'Unavailable' | 'Mixed' | 'Unknown';
-    Tilt: number,
+    Tilt: number;
 };
 
 type ZoneDefinition = Href & {
-    Name: string,
-    ControlType: string,
-    Category: { Type: string, IsLight: boolean },
-    Device: Href,
-    AssociatedFacade: Href,
-  }
+    Name: string;
+    ControlType: string;
+    Category: { Type: string; IsLight: boolean };
+    Device: Href;
+    AssociatedFacade: Href;
+};

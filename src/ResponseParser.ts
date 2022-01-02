@@ -23,7 +23,7 @@ export class ResponseParser extends (EventEmitter as new () => TypedEmitter<Resp
         const len = lines.length - 1;
         if (!len) {
             // didn't get a full line.
-            logDebug('buffer doesn\'t contain a full line');
+            logDebug("buffer doesn't contain a full line");
             this.buffer = data;
             return;
         }
