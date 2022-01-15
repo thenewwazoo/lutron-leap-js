@@ -169,14 +169,24 @@ export class BridgeFinder extends (EventEmitter as new () => TypedEmitter<Bridge
         }
 
         let bridgeID;
-        const hostname = await this.getHostnameFromIP(ipaddr);
-        logDebug('got hostname from IP:', hostname);
+        let hostname;
+
         try {
+            hostname = await this.getHostnameFromIP(ipaddr);
+            logDebug('got hostname from IP:', hostname);
+
             // If the format of the hub hostname changes, this match can break,
             // and will appear as your credentials not working any longer
             bridgeID = hostname!.match(/[Ll]utron-(?<id>\w+)\.local/)!.groups!.id;
         } catch {
-            bridgeID = ipaddr.replace('.', '_');
+            logDebug("got exception looking up hostname");
+            if (hostname) {
+                bridgeID = ipaddr.replace('.', '_');
+            } else if (this.secrets.size == 1) {
+                // If there is only one hub then we can get the bridge value from the
+                // secrets
+                bridgeID = this.secrets.entries().next().value[0];
+            }
         }
         logDebug('extracted bridge ID:', bridgeID);
 
