@@ -90,6 +90,31 @@ export class BridgeFinder extends (EventEmitter as new () => TypedEmitter<Bridge
         return undefined;
     }
 
+    private async extractBridgeFromIP(ipaddr: string): Promise<string> {
+        if (this.secrets.size == 1) {
+            // If there is only one hub then we can get the bridge value from the
+            // secrets
+            return this.secrets.entries().next().value[0];
+        } else {
+            // Otherwise query mdns for the hostname corresponding to the ip
+            let hostname = await this.getHostnameFromIP(ipaddr);
+
+            let bridgeID: string;
+            try {
+                bridgeID = hostname!.match(/[Ll]utron-(?<id>\w+)\.local/)!.groups!.id;
+            }
+            catch {
+                if (hostname) {
+                    bridgeID = ipaddr.replace('.', '_');
+                }
+                else {
+                    throw new Error('could not extract bridge id from ip adderss');
+                }
+            }
+            return bridgeID;
+        }
+    }
+
     private getHostnameFromIP(ip: string): Promise<string | undefined> {
         // n.b. this must not end with a dot. see https://github.com/mafintosh/dns-packet/issues/62
         const reversed = ip.split('.').reverse().join('.').concat('.in-addr.arpa');
@@ -168,26 +193,7 @@ export class BridgeFinder extends (EventEmitter as new () => TypedEmitter<Bridge
             throw new Error('could not get a useful address');
         }
 
-        let bridgeID;
-        let hostname;
-
-        try {
-            hostname = await this.getHostnameFromIP(ipaddr);
-            logDebug('got hostname from IP:', hostname);
-
-            // If the format of the hub hostname changes, this match can break,
-            // and will appear as your credentials not working any longer
-            bridgeID = hostname!.match(/[Ll]utron-(?<id>\w+)\.local/)!.groups!.id;
-        } catch {
-            logDebug("got exception looking up hostname");
-            if (hostname) {
-                bridgeID = ipaddr.replace('.', '_');
-            } else if (this.secrets.size == 1) {
-                // If there is only one hub then we can get the bridge value from the
-                // secrets
-                bridgeID = this.secrets.entries().next().value[0];
-            }
-        }
+        let bridgeID = await this.extractBridgeFromIP(ipaddr);
         logDebug('extracted bridge ID:', bridgeID);
 
         if (this.secrets.has(bridgeID)) {
