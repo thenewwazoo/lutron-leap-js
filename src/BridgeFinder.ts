@@ -108,7 +108,7 @@ export class BridgeFinder extends (EventEmitter as new () => TypedEmitter<Bridge
                     bridgeID = ipaddr.replace('.', '_');
                 }
                 else {
-                    throw new Error('could not extract bridge id from ip adderss');
+                    throw new Error('could not extract bridge id from ip address');
                 }
             }
             return bridgeID;
