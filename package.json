@@ -1,6 +1,6 @@
 {
     "name": "lutron-leap",
-    "version": "1.2.0-beta.0",
+    "version": "1.2.0",
     "description": "A LEAP library for Lutron Caseta Smart Bridge 2 devices",
     "keywords": [
         "lutron",
