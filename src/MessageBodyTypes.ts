@@ -111,7 +111,7 @@ export function parseBody(type: MessageBodyType, data: object): BodyType {
     return Object.assign(new theType(), data);
 }
 
-type Href = {
+export type Href = {
     href: string;
 };
 
