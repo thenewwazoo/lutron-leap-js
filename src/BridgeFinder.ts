@@ -137,7 +137,7 @@ export class BridgeFinder extends (EventEmitter as new () => TypedEmitter<Bridge
             port: 0,
         });
 
-        const timeout = setTimeout(lookupReject, 1000, 'got tired of waiting');
+        const timeout = setTimeout(lookupReject, 1000, `Did not get a hostname for ${ip} in time`);
 
         resolver.on('response', (packet: any) => {
             if (packet.id === _id) {

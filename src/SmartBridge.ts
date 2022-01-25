@@ -4,14 +4,15 @@ import { EventEmitter } from 'events';
 import { LeapClient } from './LeapClient';
 import { Response } from './Messages';
 import {
+    Button,
+    ButtonGroup,
+    Device,
+    Href,
+    MultipleDeviceDefinition,
     OneButtonDefinition,
     OneButtonGroupDefinition,
-    OneZoneStatus,
-    MultipleDeviceDefinition,
     OneDeviceDefinition,
-    Device,
-    ButtonGroup,
-    Button,
+    OneZoneStatus,
 } from './MessageBodyTypes';
 
 import TypedEmitter from 'typed-emitter';
@@ -121,30 +122,31 @@ export class SmartBridge extends (EventEmitter as new () => TypedEmitter<SmartBr
         return val;
     }
 
-    public async getButtonGroupFromDevice(device: Device): Promise<ButtonGroup> {
-        const raw = await this.client.request('ReadRequest', device.ButtonGroups[0].href);
-
-        if ((raw.Body! as OneButtonGroupDefinition).ButtonGroup) {
-            return (raw.Body! as OneButtonGroupDefinition).ButtonGroup;
-        }
-
-        throw new Error('unable to get button group');
+    /* A device has a list of ButtonGroup Hrefs. This method maps them to
+     * (promises for) the actual ButtonGroup objects themselves.
+     */
+    public async getButtonGroupsFromDevice(device: Device): Promise<Array<ButtonGroup>> {
+        return Promise.all(
+            device.ButtonGroups.map((bgHref: Href) =>
+                this.client
+                    .request('ReadRequest', bgHref.href)
+                    .then((resp: Response) => (resp.Body! as OneButtonGroupDefinition).ButtonGroup),
+            ),
+        );
     }
 
+    /* Similar to getButtonGroupsFromDevice, a ButtonGroup contains a list of
+     * Button Hrefs. This maps them to (promises for) the actual Button
+     * objects themselves.
+     */
     public async getButtonsFromGroup(bgroup: ButtonGroup): Promise<Button[]> {
-        const buttons = new Array();
-
-        for (const button of bgroup.Buttons) {
-            buttons.push(
-                this.client.request('ReadRequest', button.href).then((resp: Response) => {
-                    if ((resp.Body! as OneButtonDefinition).Button) {
-                        return (resp.Body! as OneButtonDefinition).Button;
-                    }
-                    throw new Error('unable to get button');
-                }),
-            );
-        }
-        return Promise.all(buttons);
+        return Promise.all(
+            bgroup.Buttons.map((button: Button) =>
+                this.client
+                    .request('ReadRequest', button.href)
+                    .then((resp: Response) => (resp.Body! as OneButtonDefinition).Button),
+            ),
+        );
     }
 
     private _handleUnsolicited(response: Response) {
