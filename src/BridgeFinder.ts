@@ -102,12 +102,10 @@ export class BridgeFinder extends (EventEmitter as new () => TypedEmitter<Bridge
             let bridgeID: string;
             try {
                 bridgeID = hostname!.match(/[Ll]utron-(?<id>\w+)\.local/)!.groups!.id;
-            }
-            catch {
+            } catch {
                 if (hostname) {
                     bridgeID = ipaddr.replace('.', '_');
-                }
-                else {
+                } else {
                     throw new Error('could not extract bridge id from ip address');
                 }
             }

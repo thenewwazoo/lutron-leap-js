@@ -10,6 +10,7 @@ export class UnimplementedMessageBodyType {
 }
 
 export type MessageBodyType =
+    | 'OneDeviceStatus'
     | 'OneDeviceDefinition'
     | 'MultipleDeviceDefinition'
     | 'OneZoneDefinition'
@@ -19,6 +20,10 @@ export type MessageBodyType =
     | 'OneButtonDefinition'
     | 'OneButtonStatusEvent'
     | 'ExceptionDetail';
+
+export class OneDeviceStatus {
+    DeviceStatus!: DeviceStatus;
+}
 
 export class OneDeviceDefinition {
     Device!: Device;
@@ -59,6 +64,7 @@ export class ExceptionDetail {
 }
 
 export type BodyType =
+    | OneDeviceStatus
     | OneDeviceDefinition
     | MultipleDeviceDefinition
     | OneZoneStatus
@@ -95,6 +101,9 @@ export function parseBody(type: MessageBodyType, data: object): BodyType {
             break;
         case 'OneButtonStatusEvent':
             theType = OneButtonStatusEvent;
+            break;
+        case 'OneDeviceStatus':
+            theType = OneDeviceStatus;
             break;
         default:
             throw new UnimplementedMessageBodyType(type as string);
@@ -225,4 +234,21 @@ type ZoneDefinition = Href & {
     Category: { Type: string; IsLight: boolean };
     Device: Href;
     AssociatedFacade: Href;
+};
+
+type DeviceStatus = Href & {
+    DeviceHeard: DeviceHeard;
+    Device: Device;
+    // BatteryStatus: BatteryStatus;
+    // FailedTransfers: FailedTransfer[];
+};
+
+type DeviceHeard = {
+    EngravingKit: string;
+    DiscoveryMechanism: 'UserInteraction' | 'UnassociatedDeviceDiscovery' | 'Unknown';
+    SerialNumber: string;
+    DeviceType: string;
+    ModelNumber: string; // ???
+    // UnassociatedDeviceDiscoverSession: Href;
+    // PairedDevices: PairedDevice[]
 };

@@ -1,5 +1,16 @@
 import { Response, ResponseHeader, ResponseStatus } from './Messages';
 
+test('newly-discovered device', () => {
+    const line =
+        '{"CommuniqueType": "UpdateResponse", "Header": {"MessageBodyType": "OneDeviceStatus", "StatusCode": "200 OK", "Url": "/device/status/deviceheard"}, "Body": {"DeviceStatus": {"DeviceHeard": {"DiscoveryMechanism": "UserInteraction", "ModelNumber": "PJ2-2BRL-GXX-X01", "DeviceType": "Pico2ButtonRaiseLower", "SerialNumber": 69709128}}}}';
+
+    const response: Response = Response.fromJSON(JSON.parse(line));
+    expect(response?.Header.StatusCode?.code).toEqual(200);
+    expect(response?.CommuniqueType).toEqual('UpdateResponse');
+    // @ts-ignore
+    expect(response.Body.DeviceStatus.DeviceHeard.SerialNumber).toEqual(69709128);
+});
+
 test('full response decode', () => {
     const line =
         '{"CommuniqueType": "ReadResponse", "Header": {"ClientTag": "d2018137-c87f-4315-ab04-e727c4fc973b", "MessageBodyType": "OneZoneStatus", "StatusCode": "200 OK", "Url": "/zone/1/status"}, "Body": {"ZoneStatus": {"href": "/zone/1/status", "Level": 100, "Zone": {"href": "/zone/1"}, "StatusAccuracy": "Good"}}}';
