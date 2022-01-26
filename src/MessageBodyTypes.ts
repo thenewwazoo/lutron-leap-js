@@ -236,19 +236,19 @@ type ZoneDefinition = Href & {
     AssociatedFacade: Href;
 };
 
-type DeviceStatus = Href & {
+export type DeviceStatus = Href & {
     DeviceHeard: DeviceHeard;
-    Device: Device;
+    // Device: Device;
     // BatteryStatus: BatteryStatus;
     // FailedTransfers: FailedTransfer[];
 };
 
-type DeviceHeard = {
-    EngravingKit: string;
+export type DeviceHeard = {
     DiscoveryMechanism: 'UserInteraction' | 'UnassociatedDeviceDiscovery' | 'Unknown';
     SerialNumber: string;
     DeviceType: string;
     ModelNumber: string; // ???
+    // EngravingKit: string;
     // UnassociatedDeviceDiscoverSession: Href;
     // PairedDevices: PairedDevice[]
 };
