@@ -7,6 +7,7 @@ import {
     Button,
     ButtonGroup,
     Device,
+    ExceptionDetail,
     Href,
     MultipleDeviceDefinition,
     OneButtonDefinition,
@@ -125,12 +126,22 @@ export class SmartBridge extends (EventEmitter as new () => TypedEmitter<SmartBr
     /* A device has a list of ButtonGroup Hrefs. This method maps them to
      * (promises for) the actual ButtonGroup objects themselves.
      */
-    public async getButtonGroupsFromDevice(device: Device): Promise<Array<ButtonGroup>> {
+    public async getButtonGroupsFromDevice(device: Device): Promise<Array<ButtonGroup | ExceptionDetail>> {
         return Promise.all(
             device.ButtonGroups.map((bgHref: Href) =>
                 this.client
                     .request('ReadRequest', bgHref.href)
-                    .then((resp: Response) => (resp.Body! as OneButtonGroupDefinition).ButtonGroup),
+                    .then((resp: Response) => {
+                        switch (resp.CommuniqueType) {
+                            case 'ExceptionResponse':
+                                return (resp.Body! as ExceptionDetail);
+                                break;
+                            case 'ReadResponse':
+                                return (resp.Body! as OneButtonGroupDefinition).ButtonGroup;
+                            default:
+                                throw new Error("Unexpected communique type");
+                        }
+                    }),
             ),
         );
     }
