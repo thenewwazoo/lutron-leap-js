@@ -13,8 +13,10 @@ export type MessageBodyType =
     | 'OneProjectDefinition'
     | 'OnePresetDefinition'
     | 'OneAreaSceneDefinition'
+    | 'OneLinkDefinition'
     | 'OneLinkNodeDefinition'
     | 'MultipleLinkNodeDefinition'
+    | 'MultipleLinkDefinition'
     | 'OneControlStationDefinition'
     | 'OneAreaDefinition'
     | 'MultipleAreaDefinition'
@@ -44,6 +46,10 @@ export class OnePresetDefinition {
     PresetDefinition!: PresetDefinition;
 }
 
+export class OneLinkDefinition {
+    LinkNodeDefinition!: LinkNodeDefinition;
+}
+
 export class OneLinkNodeDefinition {
     LinkNodeDefinition!: LinkNodeDefinition;
 }
@@ -51,6 +57,11 @@ export class OneLinkNodeDefinition {
 export class MultipleLinkNodeDefinition {
     Links!: LinkNodeDefinition[];
 }
+
+export class MultipleLinkDefinition {
+    Links!: LinkNodeDefinition[];
+}
+
 export class OneDeviceDefinition {
     Device!: Device;
 }
@@ -119,8 +130,10 @@ export type BodyType =
     | OneProjectDefinition
     | OnePresetDefinition
     | OneAreaSceneDefinition
+    | OneLinkDefinition
     | OneLinkNodeDefinition
     | MultipleLinkNodeDefinition
+    | MultipleLinkDefinition
     | OneZoneDefinition
     | OneAreaDefinition
     | MultipleAreaDefinition
@@ -199,11 +212,17 @@ export function parseBody(type: MessageBodyType, data: object): BodyType {
         case 'OneProjectDefinition':
             theType = OneProjectDefinition;
             break;
+        case 'OneLinkDefinition':
+            theType = OneLinkDefinition;
+            break;
         case 'OneLinkNodeDefinition':
             theType = OneLinkNodeDefinition;
             break;
         case 'MultipleLinkNodeDefinition':
             theType = MultipleLinkNodeDefinition;
+            break;
+        case 'MultipleLinkDefinition':
+            theType = MultipleLinkDefinition;
             break;
         default:
             throw new UnimplementedMessageBodyType(type as string);
@@ -399,6 +418,13 @@ type LinkNodeDefinition = Href & {
     SortOrder: number;
     // RFProperties: {json}
     AssociatedLink: Href;
+    ClearConnectTypeXLinkProperties: {
+        PANID: number;
+        ExtendedPANID: string;
+        Channel: number;
+        NetworkName: string;
+        NetworkMasterKey: string;
+    };
 };
 
 type AreaSceneDefinition = Href & {
