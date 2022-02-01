@@ -10,11 +10,24 @@ export class UnimplementedMessageBodyType {
 }
 
 export type MessageBodyType =
+    | 'OneProjectDefinition'
+    | 'OnePresetDefinition'
+    | 'OneAreaSceneDefinition'
+    | 'OneLinkDefinition'
+    | 'OneLinkNodeDefinition'
+    | 'MultipleLinkNodeDefinition'
+    | 'MultipleLinkDefinition'
+    | 'OneControlStationDefinition'
+    | 'OneAreaDefinition'
+    | 'MultipleAreaDefinition'
+    | 'OneAreaStatus'
+    | 'MultipleAreaStatus'
     | 'OneDeviceStatus'
     | 'OneDeviceDefinition'
     | 'MultipleDeviceDefinition'
     | 'OneZoneDefinition'
     | 'OneZoneStatus'
+    | 'MultipleZoneStatus'
     | 'OnePingResponse'
     | 'OneButtonGroupDefinition'
     | 'OneButtonDefinition'
@@ -25,6 +38,30 @@ export class OneDeviceStatus {
     DeviceStatus!: DeviceStatus;
 }
 
+export class OneAreaSceneDefinition {
+    AreaSceneDefinition!: AreaSceneDefinition;
+}
+
+export class OnePresetDefinition {
+    PresetDefinition!: PresetDefinition;
+}
+
+export class OneLinkDefinition {
+    LinkNodeDefinition!: LinkNodeDefinition;
+}
+
+export class OneLinkNodeDefinition {
+    LinkNodeDefinition!: LinkNodeDefinition;
+}
+
+export class MultipleLinkNodeDefinition {
+    Links!: LinkNodeDefinition[];
+}
+
+export class MultipleLinkDefinition {
+    Links!: LinkNodeDefinition[];
+}
+
 export class OneDeviceDefinition {
     Device!: Device;
 }
@@ -33,14 +70,40 @@ export class MultipleDeviceDefinition {
     Devices: Device[] = [];
 }
 
+export class MultipleAreaDefinition {
+    Areas: AreaDefinition[] = [];
+}
+
 export class OneZoneDefinition {
     ZoneDefinition!: ZoneDefinition;
+}
+
+export class OneProjectDefinition {
+    ProjectDefinition!: ProjectDefinition;
+}
+
+export class OneAreaStatus {
+    AreaStatus!: AreaStatus;
+}
+
+export class MultipleAreaStatus {
+    AreaStatuses!: AreaStatus[]
+}
+export class OneAreaDefinition {
+    AreaDefinition!: AreaDefinition;
+}
+
+export class OneControlStationDefinition {
+    ControlStationDefinition!: ControlStationDefinition;
 }
 
 export class OneZoneStatus {
     ZoneStatus!: ZoneStatus;
 }
 
+export class MultipleZoneStatus {
+    ZonsStatuses!: ZoneStatus[]
+}
 export class OnePingResponse {
     PingResponse!: {
         LEAPVersion: number;
@@ -64,10 +127,24 @@ export class ExceptionDetail {
 }
 
 export type BodyType =
+    | OneProjectDefinition
+    | OnePresetDefinition
+    | OneAreaSceneDefinition
+    | OneLinkDefinition
+    | OneLinkNodeDefinition
+    | MultipleLinkNodeDefinition
+    | MultipleLinkDefinition
+    | OneZoneDefinition
+    | OneAreaDefinition
+    | MultipleAreaDefinition
+    | OneControlStationDefinition
+    | OneAreaStatus
+    | MultipleAreaStatus
     | OneDeviceStatus
     | OneDeviceDefinition
     | MultipleDeviceDefinition
     | OneZoneStatus
+    | MultipleZoneStatus
     | OnePingResponse
     | OneButtonGroupDefinition
     | OneButtonDefinition
@@ -81,6 +158,15 @@ export function parseBody(type: MessageBodyType, data: object): BodyType {
         case 'OneDeviceDefinition':
             theType = OneDeviceDefinition;
             break;
+        case 'OnePresetDefinition':
+            theType = OnePresetDefinition;
+            break;
+        case 'OneAreaSceneDefinition':
+            theType = OneAreaSceneDefinition;
+            break;
+        case 'MultipleAreaDefinition':
+            theType = MultipleAreaDefinition;
+            break;
         case 'MultipleDeviceDefinition':
             theType = MultipleDeviceDefinition;
             break;
@@ -89,6 +175,9 @@ export function parseBody(type: MessageBodyType, data: object): BodyType {
             break;
         case 'OneZoneStatus':
             theType = OneZoneStatus;
+            break;
+        case 'MultipleZoneStatus':
+            theType = MultipleZoneStatus;
             break;
         case 'OnePingResponse':
             theType = OnePingResponse;
@@ -104,6 +193,36 @@ export function parseBody(type: MessageBodyType, data: object): BodyType {
             break;
         case 'OneDeviceStatus':
             theType = OneDeviceStatus;
+            break;
+        case 'OneZoneDefinition':
+            theType = OneZoneDefinition;
+            break;
+        case 'OneAreaDefinition':
+            theType = OneAreaDefinition;
+            break;
+        case 'OneAreaStatus':
+            theType = OneAreaStatus;
+            break;
+        case 'MultipleAreaStatus':
+            theType = MultipleAreaStatus;
+            break;
+        case 'OneControlStationDefinition':
+            theType = OneControlStationDefinition;
+            break;
+        case 'OneProjectDefinition':
+            theType = OneProjectDefinition;
+            break;
+        case 'OneLinkDefinition':
+            theType = OneLinkDefinition;
+            break;
+        case 'OneLinkNodeDefinition':
+            theType = OneLinkNodeDefinition;
+            break;
+        case 'MultipleLinkNodeDefinition':
+            theType = MultipleLinkNodeDefinition;
+            break;
+        case 'MultipleLinkDefinition':
+            theType = MultipleLinkDefinition;
             break;
         default:
             throw new UnimplementedMessageBodyType(type as string);
@@ -252,3 +371,70 @@ export type DeviceHeard = {
     // UnassociatedDeviceDiscoverSession: Href;
     // PairedDevices: PairedDevice[]
 };
+
+type AreaStatus = Href & {
+    Level: number;
+    OccupancyStatus: string;
+    CurrentScene: Href;
+};
+
+type AreaDefinition = Href & {
+    Name: string;
+    ControlType: string;
+    Parent: Href;
+    AssociatedZones: Href[];
+    AssociatedControlStations: Href[];
+};
+
+type ControlStationDefinition = Href & {
+    Name: string;
+    ControlType: string;
+    Parent: Href;
+    AssociatedArea: Href;
+    SortOrder: number
+    AssociatedGangedDevices: Device[];
+};
+
+type ProjectDefinition = Href & {
+    Name: string;
+    ControlType: string;
+    ProductType: string;
+    Contacts: Href[];
+    TimeclockEventRules: Href;
+    ProjectModifiedTimestamp: {
+        Year: number;
+        Month: number;
+        Day: number;
+        Hour: number;
+        Minute: number;
+        Second: number;
+        Utc: 'string';
+    };
+};
+
+type LinkNodeDefinition = Href & {
+    Parent: Href;
+    LinkType: string;
+    SortOrder: number;
+    // RFProperties: {json}
+    AssociatedLink: Href;
+    ClearConnectTypeXLinkProperties: {
+        PANID: number;
+        ExtendedPANID: string;
+        Channel: number;
+        NetworkName: string;
+        NetworkMasterKey: string;
+    };
+};
+
+type AreaSceneDefinition = Href & {
+    Name: string;
+    Parent: Href;
+    Preset: Href;
+    SortOrder: number;
+};
+
+type PresetDefinition = Href & {
+    Parent: Href;
+};
+
