@@ -212,5 +212,5 @@ test('OnePresetDefinition', () => {
     expect(response?.Header.StatusCode?.code).toEqual(200);
     expect(response?.CommuniqueType).toEqual('ReadResponse');
     // @ts-ignore
-    expect(response.Body.Preset.Parent).toEqual({"href":"/areascene/734"});
+    expect(response.Body.Preset.Parent).toEqual({ href: '/areascene/734' });
 });

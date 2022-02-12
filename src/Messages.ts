@@ -51,6 +51,8 @@ export class Response {
     }
 }
 
+export type ResponseWithTag = { response: Response; tag: string };
+
 export class ResponseStatus {
     constructor(public message: string, public code?: number) {}
 

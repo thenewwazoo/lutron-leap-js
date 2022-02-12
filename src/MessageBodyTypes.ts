@@ -32,6 +32,8 @@ export type MessageBodyType =
     | 'OneButtonGroupDefinition'
     | 'OneButtonDefinition'
     | 'OneButtonStatusEvent'
+    | 'MultipleOccupancyGroupStatus'
+    | 'OneOccupancyGroupDefinition'
     | 'ExceptionDetail';
 
 export class OneDeviceStatus {
@@ -39,19 +41,19 @@ export class OneDeviceStatus {
 }
 
 export class OneAreaSceneDefinition {
-    AreaSceneDefinition!: AreaSceneDefinition;
+    AreaScene!: AreaSceneDefinition;
 }
 
 export class OnePresetDefinition {
-    PresetDefinition!: PresetDefinition;
+    Preset!: PresetDefinition;
 }
 
 export class OneLinkDefinition {
-    LinkNodeDefinition!: LinkNodeDefinition;
+    LinkNode!: LinkNodeDefinition;
 }
 
 export class OneLinkNodeDefinition {
-    LinkNodeDefinition!: LinkNodeDefinition;
+    LinkNode!: LinkNodeDefinition;
 }
 
 export class MultipleLinkNodeDefinition {
@@ -63,11 +65,11 @@ export class MultipleLinkDefinition {
 }
 
 export class OneDeviceDefinition {
-    Device!: Device;
+    Device!: DeviceDefinition;
 }
 
 export class MultipleDeviceDefinition {
-    Devices: Device[] = [];
+    Devices: DeviceDefinition[] = [];
 }
 
 export class MultipleAreaDefinition {
@@ -75,11 +77,11 @@ export class MultipleAreaDefinition {
 }
 
 export class OneZoneDefinition {
-    ZoneDefinition!: ZoneDefinition;
+    Zone!: ZoneDefinition;
 }
 
 export class OneProjectDefinition {
-    ProjectDefinition!: ProjectDefinition;
+    Project!: ProjectDefinition;
 }
 
 export class OneAreaStatus {
@@ -87,14 +89,15 @@ export class OneAreaStatus {
 }
 
 export class MultipleAreaStatus {
-    AreaStatuses!: AreaStatus[]
+    AreaStatuses!: AreaStatus[];
 }
+
 export class OneAreaDefinition {
-    AreaDefinition!: AreaDefinition;
+    Area!: AreaDefinition;
 }
 
 export class OneControlStationDefinition {
-    ControlStationDefinition!: ControlStationDefinition;
+    ControlStation!: ControlStationDefinition;
 }
 
 export class OneZoneStatus {
@@ -102,8 +105,9 @@ export class OneZoneStatus {
 }
 
 export class MultipleZoneStatus {
-    ZonsStatuses!: ZoneStatus[]
+    ZonsStatuses!: ZoneStatus[];
 }
+
 export class OnePingResponse {
     PingResponse!: {
         LEAPVersion: number;
@@ -111,15 +115,23 @@ export class OnePingResponse {
 }
 
 export class OneButtonGroupDefinition {
-    ButtonGroup!: ButtonGroup;
+    ButtonGroup!: ButtonGroupDefinition;
 }
 
 export class OneButtonDefinition {
-    Button!: Button;
+    Button!: ButtonDefinition;
 }
 
 export class OneButtonStatusEvent {
     ButtonStatus!: ButtonStatus;
+}
+
+export class MultipleOccupancyGroupStatus {
+    OccupancyGroupStatuses!: OccupancyGroupStatus[];
+}
+
+export class OneOccupancyGroupDefinition {
+    OccupancyGroup!: OccupancyGroupDefinition;
 }
 
 export class ExceptionDetail {
@@ -149,6 +161,8 @@ export type BodyType =
     | OneButtonGroupDefinition
     | OneButtonDefinition
     | OneButtonStatusEvent
+    | MultipleOccupancyGroupStatus
+    | OccupancyGroupDefinition
     | ExceptionDetail;
 
 export function parseBody(type: MessageBodyType, data: object): BodyType {
@@ -224,6 +238,12 @@ export function parseBody(type: MessageBodyType, data: object): BodyType {
         case 'MultipleLinkDefinition':
             theType = MultipleLinkDefinition;
             break;
+        case 'MultipleOccupancyGroupStatus':
+            theType = MultipleOccupancyGroupStatus;
+            break;
+        case 'OneOccupancyGroupDefinition':
+            theType = OneOccupancyGroupDefinition;
+            break;
         default:
             throw new UnimplementedMessageBodyType(type as string);
     }
@@ -253,7 +273,7 @@ export type Zone = Href & {
 };
 
 export type AffectedZone = Href & {
-    ButtonGroup: ButtonGroup;
+    ButtonGroup: ButtonGroupDefinition;
     Zone: Zone;
 };
 
@@ -276,7 +296,7 @@ type ProgrammingModel = Href & {
     ProgrammingModelType: string;
 };
 
-export type Button = Href & {
+export type ButtonDefinition = Href & {
     AssociatedLED: Href;
     ButtonNumber: number;
     Engraving: { Text: string };
@@ -285,10 +305,10 @@ export type Button = Href & {
     ProgrammingModel: ProgrammingModel;
 };
 
-export type ButtonGroup = Href & {
+export type ButtonGroupDefinition = Href & {
     AffectedZones: AffectedZone[];
-    Buttons: Button[];
-    Parent: Device;
+    Buttons: ButtonDefinition[];
+    Parent: DeviceDefinition;
     ProgrammingType: string;
     SortOrder: number;
     StopIfMoving: string;
@@ -299,7 +319,7 @@ export type ButtonStatus = Href & {
     ButtonEvent: { EventType: 'Press' | 'Release' | 'LongHold' };
 };
 
-export type Device = Href & {
+export type DeviceDefinition = Href & {
     Name: string;
     FullyQualifiedName: string[];
     Parent: Href;
@@ -384,6 +404,7 @@ type AreaDefinition = Href & {
     Parent: Href;
     AssociatedZones: Href[];
     AssociatedControlStations: Href[];
+    AssociatedOccupancyGroups: Href[];
 };
 
 type ControlStationDefinition = Href & {
@@ -391,8 +412,8 @@ type ControlStationDefinition = Href & {
     ControlType: string;
     Parent: Href;
     AssociatedArea: Href;
-    SortOrder: number
-    AssociatedGangedDevices: Device[];
+    SortOrder: number;
+    AssociatedGangedDevices: DeviceDefinition[];
 };
 
 type ProjectDefinition = Href & {
@@ -438,3 +459,26 @@ type PresetDefinition = Href & {
     Parent: Href;
 };
 
+export type OccupancyStatus = 'Occupied' | 'Unoccupied' | 'Unknown';
+
+export type OccupancyGroupStatus = Href & {
+    OccupancyGroup: OccupancyGroupDefinition;
+    OccupancyStatus: OccupancyStatus;
+};
+
+type OccupancyGroupDefinition = Href & {
+    AssociatedAreas?: AssociatedArea[];
+    AssociatedSensors?: AssociatedSensor[];
+    ProgrammingModel?: Href;
+    ProgrammingType?: string;
+    OccupiedActionSchedule?: { ScheduleType: string }; // nfi
+    UnoccupiedActionSchedule?: { ScheduleType: string }; // also nfi
+};
+
+type AssociatedArea = Href & {
+    Area: Href;
+};
+
+type AssociatedSensor = Href & {
+    OccupancySensor: Href;
+};

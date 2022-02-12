@@ -91,13 +91,13 @@ export class BridgeFinder extends (EventEmitter as new () => TypedEmitter<Bridge
     }
 
     private async extractBridgeFromIP(ipaddr: string): Promise<string> {
-        if (this.secrets.size == 1) {
+        if (this.secrets.size === 1) {
             // If there is only one hub then we can get the bridge value from the
             // secrets
             return this.secrets.entries().next().value[0];
         } else {
             // Otherwise query mdns for the hostname corresponding to the ip
-            let hostname = await this.getHostnameFromIP(ipaddr);
+            const hostname = await this.getHostnameFromIP(ipaddr);
 
             let bridgeID: string;
             try {
@@ -191,7 +191,7 @@ export class BridgeFinder extends (EventEmitter as new () => TypedEmitter<Bridge
             throw new Error('could not get a useful address');
         }
 
-        let bridgeID = await this.extractBridgeFromIP(ipaddr);
+        const bridgeID = await this.extractBridgeFromIP(ipaddr);
         logDebug('extracted bridge ID:', bridgeID);
 
         if (this.secrets.has(bridgeID)) {

@@ -5,8 +5,8 @@ import * as tls from 'tls';
 
 import { ImportMock } from 'ts-mock-imports';
 
-import { Response } from './Messages';
-import { LeapClient, ResponseWithTag } from './LeapClient';
+import { Response, ResponseWithTag } from './Messages';
+import { LeapClient } from './LeapClient';
 
 const conn_stub = ImportMock.mockFunction(tls, 'connect', MockTLS.theSocket);
 const ctx_stub = ImportMock.mockFunction(tls, 'createSecureContext', Object.create(null));
@@ -34,7 +34,7 @@ it('subscribe and receive', async () => {
     const count = 0;
 
     const client = new LeapClient('', 0, '', '', '');
-    client.connect();
+    const connp = client.connect();
     MockTLS.__secureConnect();
 
     const mockSubHandle = jest.fn((response: Response): void => {
@@ -43,6 +43,8 @@ it('subscribe and receive', async () => {
     });
 
     const p: Promise<ResponseWithTag> = client.subscribe(req_url, mockSubHandle, req_commtype, undefined, req_tag);
+
+    await connp;
 
     MockTLS.__tickle(response);
 
@@ -71,11 +73,13 @@ it('round-trip in-flight', async () => {
 
     const client = new LeapClient('foohost', 6666, 'cafilestr', 'keystr', 'certstr');
 
-    client.connect();
+    const connp = client.connect();
 
     MockTLS.__secureConnect();
 
     const p: Promise<Response> = client.request(req_commtype, req_url, undefined, req_tag);
+
+    await connp;
 
     MockTLS.__tickle(response);
 

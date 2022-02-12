@@ -2,11 +2,12 @@ import debug from 'debug';
 import { EventEmitter } from 'events';
 
 import { LeapClient } from './LeapClient';
-import { Response } from './Messages';
+import { Response, ResponseWithTag } from './Messages';
 import {
-    Button,
-    ButtonGroup,
-    Device,
+    BodyType,
+    ButtonDefinition,
+    ButtonGroupDefinition,
+    DeviceDefinition,
     ExceptionDetail,
     Href,
     MultipleDeviceDefinition,
@@ -14,6 +15,7 @@ import {
     OneButtonGroupDefinition,
     OneDeviceDefinition,
     OneZoneStatus,
+    MultipleOccupancyGroupStatus,
 } from './MessageBodyTypes';
 
 import TypedEmitter from 'typed-emitter';
@@ -77,6 +79,12 @@ export class SmartBridge extends (EventEmitter as new () => TypedEmitter<SmartBr
         return await this.client.request('ReadRequest', '/server/1/status/ping');
     }
 
+    public async getHref(href: Href): Promise<BodyType> {
+        logDebug(`client getting href ${href.href}`);
+        const raw = await this.client.request('ReadRequest', href.href);
+        return raw.Body!;
+    }
+
     public async getBridgeInfo(): Promise<BridgeInfo> {
         logDebug('getting bridge information');
         const raw = await this.client.request('ReadRequest', '/device/1');
@@ -93,7 +101,7 @@ export class SmartBridge extends (EventEmitter as new () => TypedEmitter<SmartBr
         throw new Error('Got bad response to bridge info request');
     }
 
-    public async getDeviceInfo(): Promise<Device[]> {
+    public async getDeviceInfo(): Promise<DeviceDefinition[]> {
         logDebug('getting info about all devices');
         const raw = await this.client.request('ReadRequest', '/device');
         if ((raw.Body! as MultipleDeviceDefinition).Devices) {
@@ -103,7 +111,7 @@ export class SmartBridge extends (EventEmitter as new () => TypedEmitter<SmartBr
         throw new Error('got bad response to all device list request');
     }
 
-    public async setBlindsTilt(device: Device, value: number): Promise<void> {
+    public async setBlindsTilt(device: DeviceDefinition, value: number): Promise<void> {
         const href = device.LocalZones[0].href + '/commandprocessor';
         logDebug('setting href', href, 'to value', value);
         this.client.request('CreateRequest', href, {
@@ -116,7 +124,7 @@ export class SmartBridge extends (EventEmitter as new () => TypedEmitter<SmartBr
         });
     }
 
-    public async readBlindsTilt(device: Device): Promise<number> {
+    public async readBlindsTilt(device: DeviceDefinition): Promise<number> {
         const resp = await this.client.request('ReadRequest', device.LocalZones[0].href + '/status');
         const val = (resp.Body! as OneZoneStatus).ZoneStatus.Tilt;
         logDebug('read tilt for device', device.FullyQualifiedName.join(' '), 'at', val);
@@ -126,22 +134,22 @@ export class SmartBridge extends (EventEmitter as new () => TypedEmitter<SmartBr
     /* A device has a list of ButtonGroup Hrefs. This method maps them to
      * (promises for) the actual ButtonGroup objects themselves.
      */
-    public async getButtonGroupsFromDevice(device: Device): Promise<Array<ButtonGroup | ExceptionDetail>> {
+    public async getButtonGroupsFromDevice(
+        device: DeviceDefinition,
+    ): Promise<(ButtonGroupDefinition | ExceptionDetail)[]> {
         return Promise.all(
             device.ButtonGroups.map((bgHref: Href) =>
-                this.client
-                    .request('ReadRequest', bgHref.href)
-                    .then((resp: Response) => {
-                        switch (resp.CommuniqueType) {
-                            case 'ExceptionResponse':
-                                return (resp.Body! as ExceptionDetail);
-                                break;
-                            case 'ReadResponse':
-                                return (resp.Body! as OneButtonGroupDefinition).ButtonGroup;
-                            default:
-                                throw new Error("Unexpected communique type");
-                        }
-                    }),
+                this.client.request('ReadRequest', bgHref.href).then((resp: Response) => {
+                    switch (resp.CommuniqueType) {
+                        case 'ExceptionResponse':
+                            return resp.Body! as ExceptionDetail;
+                            break;
+                        case 'ReadResponse':
+                            return (resp.Body! as OneButtonGroupDefinition).ButtonGroup;
+                        default:
+                            throw new Error('Unexpected communique type');
+                    }
+                }),
             ),
         );
     }
@@ -150,14 +158,32 @@ export class SmartBridge extends (EventEmitter as new () => TypedEmitter<SmartBr
      * Button Hrefs. This maps them to (promises for) the actual Button
      * objects themselves.
      */
-    public async getButtonsFromGroup(bgroup: ButtonGroup): Promise<Button[]> {
+    public async getButtonsFromGroup(bgroup: ButtonGroupDefinition): Promise<ButtonDefinition[]> {
         return Promise.all(
-            bgroup.Buttons.map((button: Button) =>
+            bgroup.Buttons.map((button: ButtonDefinition) =>
                 this.client
                     .request('ReadRequest', button.href)
                     .then((resp: Response) => (resp.Body! as OneButtonDefinition).Button),
             ),
         );
+    }
+
+    public subscribeToButton(button: ButtonDefinition, cb: (r: Response) => void) {
+        this.client.subscribe(button.href + '/status/event', cb);
+    }
+
+    /* Because we can't subscribe to individual occupancysensors, we have to
+     * subscribe to everything and handle routing elsewhere. As such, this will
+     * call `cb` every time any sensor changes.
+     */
+    public async subscribeToOccupancy(cb: (r: Response) => void): Promise<MultipleOccupancyGroupStatus> {
+        this.client.subscribe('/occupancygroup/status', cb).catch((e) => {
+            logDebug('ignoring failed subscription because response is not tagged');
+        });
+
+        return this.client
+            .request('ReadRequest', '/occupancygroup/status')
+            .then((resp: Response) => resp.Body! as MultipleOccupancyGroupStatus);
     }
 
     private _handleUnsolicited(response: Response) {

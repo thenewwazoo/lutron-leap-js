@@ -2,15 +2,13 @@ import { ConnectionOptions, TLSSocket, connect, createSecureContext } from 'tls'
 import debug from 'debug';
 import { EventEmitter } from 'events';
 
-import { Response } from './Messages';
+import { Response, ResponseWithTag } from './Messages';
 import { ResponseParser } from './ResponseParser';
 
 import TypedEmitter from 'typed-emitter';
 import { v4 as uuidv4 } from 'uuid';
 
 const logDebug = debug('leap:protocol');
-
-export type ResponseWithTag = { response: Response; tag: string };
 
 interface Message {
     CommuniqueType: string;
@@ -157,11 +155,15 @@ export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClie
     public async subscribe(
         url: string,
         callback: (resp: Response) => void,
-        communiqueType: string,
+        communiqueType?: string,
         body?: Record<string, unknown>,
         tag?: string,
     ): Promise<ResponseWithTag> {
         const _tag = tag || uuidv4();
+
+        if (communiqueType === undefined) {
+            communiqueType = 'SubscribeRequest';
+        }
 
         return await this.request(communiqueType, url, body, _tag).then((response: Response) => {
             if (response.Header.StatusCode !== undefined && response.Header.StatusCode.isSuccessful()) {
