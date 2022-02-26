@@ -39,7 +39,7 @@ Messages that have a tag that is _not_ recognized by the client are noisily drop
 
 Because this code was written to support Caseta devices, the following section only applies to the Caseta Smart Bridge 2. I wholeheartedly welcome improvements related to other LEAP technologies.
 
-Caseta Smart Bridge 2 and Smart Bridge 2 Pro devices are [discovered by using mDNS](https://github.com/thenewwazoo/lutron-leap-js/blob/851f87c4941c19acfff86ee39317ca5f365e027c/src/BridgeFinder.ts#L40). The BridgeFinder [handles discovery](https://github.com/thenewwazoo/lutron-leap-js/blob/851f87c4941c19acfff86ee39317ca5f365e027c/src/BridgeFinder.ts#L157) and creates [SmartBridge](https://github.com/thenewwazoo/lutron-leap-js/blob/851f87c4941c19acfff86ee39317ca5f365e027c/src/SmartBridge.ts#L37) objects that contain the actual client itself.
+Caseta Smart Bridge 2 and Smart Bridge 2 Pro devices are [discovered by using mDNS](https://github.com/thenewwazoo/lutron-leap-js/blob/851f87c4941c19acfff86ee39317ca5f365e027c/src/BridgeFinder.ts#L40). The BridgeFinder [handles discovery](https://github.com/thenewwazoo/lutron-leap-js/blob/851f87c4941c19acfff86ee39317ca5f365e027c/src/BridgeFinder.ts#L157) and returns network information that be used by the listener to construct the actual client itself.
 
 The SmartBridge class abstractions for relevant operations like subscribing to known device types. The goal is to relieve the user of having to know how to construct URLs and post bodies, but instead to encode that information in this library.
 
