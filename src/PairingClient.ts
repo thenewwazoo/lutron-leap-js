@@ -3,7 +3,6 @@ import debug from 'debug';
 import { EventEmitter } from 'events';
 
 import TypedEmitter from 'typed-emitter';
-import { v4 as uuidv4 } from 'uuid';
 
 import { assocCert, assocKey, assocCACert } from './Association';
 
@@ -12,12 +11,6 @@ const logDebug = debug('leap:pairing');
 interface PairingEvents {
     message: (response: object) => void;
     disconnected: () => void;
-}
-
-interface InFlightRequest {
-    resolve: (message: object) => void;
-    reject: (err: Error) => void;
-    timeout: ReturnType<typeof setTimeout>;
 }
 
 export class PairingClient extends (EventEmitter as new () => TypedEmitter<PairingEvents>) {
