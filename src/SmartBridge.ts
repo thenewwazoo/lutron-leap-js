@@ -23,7 +23,7 @@ const logDebug = debug('leap:bridge');
 
 export const LEAP_PORT = 8081;
 const PING_INTERVAL_MS = 60000;
-const PING_TIMEOUT_MS = 1000;
+const PING_TIMEOUT_MS = 10000;
 
 export interface BridgeInfo {
     firmwareRevision: string;
