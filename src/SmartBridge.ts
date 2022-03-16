@@ -194,7 +194,7 @@ export class SmartBridge extends (EventEmitter as new () => TypedEmitter<SmartBr
 
     private _handleDisconnect(): void {
         logDebug('bridge id', this.bridgeID, 'disconnected.');
-        this.close();
+        clearTimeout(this.pingLooper);
     }
 
     public close(): void {

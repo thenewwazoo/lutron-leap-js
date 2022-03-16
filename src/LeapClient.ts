@@ -8,7 +8,7 @@ import { ResponseParser } from './ResponseParser';
 import TypedEmitter from 'typed-emitter';
 import { v4 as uuidv4 } from 'uuid';
 
-const logDebug = debug('leap:protocol');
+const logDebug = debug('leap:protocol:client');
 
 interface Message {
     CommuniqueType: string;
@@ -125,17 +125,18 @@ export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClie
         if (!this.connected) {
             logDebug('needs to connect');
             this.connected = new Promise((resolve, reject) => {
-                logDebug('about to connect');
+
                 this.socket = connect(this.port, this.host, this.tlsOptions, () => {
                     logDebug('connected!');
                 });
+
                 this.socket.once('secureConnect', () => {
                     logDebug('securely connected');
                     this._onConnect(resolve);
                 });
 
                 this.socket.once('error', (e) => {
-                    logDebug('connection failed: ', e);
+                    console.error('connection failed: ', e);
                     this.connected = null;
                     reject(e);
                 });
@@ -147,9 +148,7 @@ export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClie
 
     public close() {
         this.connected = null;
-        if (this.socket !== undefined) {
-            this.socket.destroy();
-        }
+        this.socket?.end();
     }
 
     public async subscribe(
@@ -182,75 +181,34 @@ export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClie
 
     private _onConnect(next: () => void): void {
         logDebug('_onConnect called');
-        // Clear out event listeners from _connect()
-        if (this.socket) {
-            this.socket.removeAllListeners('error');
-            this.socket.removeAllListeners('connect');
-            this.socket.removeAllListeners('secureConnect');
-        }
 
-        const socketError = (err: Error): void => {
-            logDebug('socket error:', err);
-            this._empty();
-
-            if (this.socket) {
-                this.socket.destroy();
-            }
-
-            this.removeAllListeners('unsolicited');
+        const socketErr = (err: Error) => {
+            console.error('socket error:', err);
         };
 
-        function socketEnd(this: TLSSocket): void {
+        const socketEnd = () => {
             logDebug('client socket has ended');
-            if (this) {
-                // Acknowledge to other end of the connection that the connection is ended.
-                this.end();
-            }
-        }
+            this.socket?.end(); // Acknowledge to other end of the connection that the connection is ended.
+            this.socket?.destroy(); // Prevent writes
+        };
 
-        function socketTimeout(this: TLSSocket): void {
-            logDebug('client socket has timed out');
-            if (this) {
-                // Acknowledge to other end of the connection that the connection is ended.
-                this.end();
-            }
-        }
+        const socketClose = (sock: TLSSocket): void => {
+            console.warn('client socket has closed.');
 
-        // eslint-disable-next-line @typescript-eslint/no-this-alias
-        const clientInstance = this;
+            this.connected = null;
+            this._empty();
+            sock.emit('disconnected');
+        };
 
-        function socketClose(this: TLSSocket): void {
-            logDebug('client socket has closed.');
-            if (this) {
-                this.removeListener('error', socketError);
-                this.removeListener('close', socketClose);
-                this.removeListener('data', clientInstance.socketDataHandler);
-                this.removeListener('end', socketEnd);
-                this.removeListener('timeout', socketTimeout);
-            }
-
-            if (this === clientInstance.socket) {
-                clientInstance.connected = null;
-                delete clientInstance.socket;
-            }
-
-            clientInstance._empty();
-            clientInstance.removeAllListeners('unsolicited');
-            this.emit('disconnected');
-        }
-
-        if (this.socket) {
-            this.socket.on('error', socketError);
-            this.socket.on('close', socketClose);
-            this.socket.on('data', this.socketDataHandler);
-            this.socket.on('end', socketEnd);
-            this.socket.on('timeout', socketTimeout);
-        }
+        this.socket?.on('error', socketErr);
+        this.socket?.on('close', socketClose);
+        this.socket?.on('data', this.socketDataHandler.bind(this));
+        this.socket?.on('end', socketEnd);
 
         return next();
     }
 
-    private readonly socketDataHandler = (data: Buffer): void => {
+    private socketDataHandler (data: Buffer): void {
         const s = data.toString();
         logDebug('got data from socket:', s);
         this.responseParser.handleData(s);
