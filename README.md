@@ -14,6 +14,12 @@ LEAP is a protocol. It defines certain _message types_ and _objects_, as well as
 
 Ehhh probably not. My preference is to keep this library "pure" as _only_ an implementation of LEAP. I'm absolutely open to a separate, general-purpose library that contains Lutron product abstractions that _use_ this library, but I don't have a need for one so I'm not going to write it right now.
 
+### But what about bridges? Those are devices!
+
+That's true! Bridges are a notable exception because they are entry points into traversing the LEAP device "tree". Consumers of this library don't want or need to understand things like button groups or occupancy subscription that are specific to existing (physical) implementations of LEAP.
+
+The "readBlindsTilt" and "setBlindsTilt" are kinda hacks that should get cleaned up in favor of an abstraction over the various `CommandType` values available. That should come if/when support for another bridge is added to the library.
+
 ## Code structure
 
 This code has three major components: the message parsing stack, the LEAP client, and a Caséta Smart Bridge 2 abstraction.
