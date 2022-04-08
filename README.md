@@ -2,7 +2,17 @@
 
 This library is an implementation of Lutron's unpublished LEAP protocol. It is, in large part, a port of [pylutron-caseta](https://github.com/gurumitts/pylutron-caseta), without which this would not have been possible. It was written to support the [homebridge-lutron-caseta-leap](https://github.com/thenewwazoo/homebridge-lutron-caseta-leap) Homebridge plugin, but it exists independently of it and has been tested and improved in non-Caseta contexts.
 
-The code is kinda messy. Sorry about that.
+## Device support
+
+### Will you add support for X device? Can I?
+
+The answer to "can this add support for a device" is probably no, but maybe not for the reason you expect.
+
+LEAP is a protocol. It defines certain _message types_ and _objects_, as well as implicitly defines some _behaviors_. Some of these definitions include objects that do indeed map to real-world objects, but only things that are components of the kind of devices you're asking about. As a concrete example, LEAP defines things like buttons. Not remotes, but individual buttons. So adding support for a particular remote doesn't really make sense in this library, because there's no concept of a "remote" in LEAP. There's just generic devices and button groups.
+
+### Well, can you/I add classes for those concepts?
+
+Ehhh probably not. My preference is to keep this library "pure" as _only_ an implementation of LEAP. I'm absolutely open to a separate, general-purpose library that contains Lutron product abstractions that _use_ this library, but I don't have a need for one so I'm not going to write it right now.
 
 ## Code structure
 
