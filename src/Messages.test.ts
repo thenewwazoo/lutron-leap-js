@@ -214,3 +214,14 @@ test('OnePresetDefinition', () => {
     // @ts-ignore
     expect(response.Body.Preset.Parent).toEqual({ href: '/areascene/734' });
 });
+
+test('MultipleZoneDefinition', () => {
+    const line =
+        '{"Header":{"MessageBodyType":"MultipleZoneDefinition","StatusCode":"200 OK","Url":"/area/447/associatedzone","ClientTag":"9fea5607-2959-43bc-aa89-4d5d1c573725"},"CommuniqueType":"ReadResponse","Body":{"Zones":[{"href":"/zone/823","Name":"Kitchen Lights","ControlType":"Dimmed","Category":{"Type":"","IsLight":true},"AssociatedArea":{"href":"/area/447"},"SortOrder":0}]}}';
+
+    const response: Response = Response.fromJSON(JSON.parse(line));
+    expect(response?.Header.StatusCode?.code).toEqual(200);
+    expect(response?.CommuniqueType).toEqual('ReadResponse');
+    // @ts-ignore
+    expect(response.Body.Zones[0].ControlType).toEqual('Dimmed');
+});

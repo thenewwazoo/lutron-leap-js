@@ -26,6 +26,7 @@ export type MessageBodyType =
     | 'OneDeviceDefinition'
     | 'MultipleDeviceDefinition'
     | 'OneZoneDefinition'
+    | 'MultipleZoneDefinition'
     | 'OneZoneStatus'
     | 'MultipleZoneStatus'
     | 'OnePingResponse'
@@ -78,6 +79,10 @@ export class MultipleAreaDefinition {
 
 export class OneZoneDefinition {
     Zone!: ZoneDefinition;
+}
+
+export class MultipleZoneDefinition {
+    Zones: ZoneDefinition[] = [];
 }
 
 export class OneProjectDefinition {
@@ -147,6 +152,7 @@ export type BodyType =
     | MultipleLinkNodeDefinition
     | MultipleLinkDefinition
     | OneZoneDefinition
+    | MultipleZoneDefinition
     | OneAreaDefinition
     | MultipleAreaDefinition
     | OneControlStationDefinition
@@ -210,6 +216,9 @@ export function parseBody(type: MessageBodyType, data: object): BodyType {
             break;
         case 'OneZoneDefinition':
             theType = OneZoneDefinition;
+            break;
+        case 'MultipleZoneDefinition':
+            theType = MultipleZoneDefinition;
             break;
         case 'OneAreaDefinition':
             theType = OneAreaDefinition;
