@@ -197,7 +197,7 @@ export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClie
 
             this.connected = null;
             this._empty();
-            sock.emit('disconnected');
+            this.emit('disconnected');
         };
 
         this.socket?.on('error', socketErr);
