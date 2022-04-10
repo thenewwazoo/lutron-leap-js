@@ -149,6 +149,17 @@ test('OneZoneDefinition', () => {
     expect(response.Body.Zone.ControlType).toEqual('Switched');
 });
 
+test('OneZoneDefinition', () => {
+    const line =
+        '{"CommuniqueType":"ReadResponse","Header":{"MessageBodyType":"OneZoneDefinition","StatusCode":"200 OK","Url":"/zone/622","ClientTag":"ec1ec311-1e53-439d-ac46-0908252d7d08"},"Body":{"Zone":{"href":"/zone/622","Name":"Loft Outdoors","ControlType":"Switched","Category":{"Type":"OtherAmbient","IsLight":true},"AssociatedArea":{"href":"/area/729"},"SortOrder":0}}}';
+
+    const response: Response = Response.fromJSON(JSON.parse(line));
+    expect(response?.Header.StatusCode?.code).toEqual(200);
+    expect(response?.CommuniqueType).toEqual('ReadResponse');
+    // @ts-ignore
+    expect(response.Body.Zone.ControlType).toEqual('Switched');
+});
+
 test('OneAreaDefinition', () => {
     const line =
         '{"CommuniqueType":"ReadResponse","Header":{"MessageBodyType":"OneAreaDefinition","StatusCode":"200 OK","Url":"/area/729","ClientTag":"2ac306b1-13f3-4d11-a4d7-b5b4776311f3"},"Body":{"Area":{"href":"/area/729","Name":"Loft","Parent":{"href":"/area/24"},"AssociatedZones":[{"href":"/zone/622"}],"AssociatedControlStations":[{"href":"/controlstation/613"},{"href":"/controlstation/750"}]}}}';
@@ -213,4 +224,15 @@ test('OnePresetDefinition', () => {
     expect(response?.CommuniqueType).toEqual('ReadResponse');
     // @ts-ignore
     expect(response.Body.Preset.Parent).toEqual({ href: '/areascene/734' });
+});
+
+test('MultipleZoneDefinition', () => {
+    const line =
+        '{"Header":{"MessageBodyType":"MultipleZoneDefinition","StatusCode":"200 OK","Url":"/area/447/associatedzone","ClientTag":"9fea5607-2959-43bc-aa89-4d5d1c573725"},"CommuniqueType":"ReadResponse","Body":{"Zones":[{"href":"/zone/823","Name":"Kitchen Lights","ControlType":"Dimmed","Category":{"Type":"","IsLight":true},"AssociatedArea":{"href":"/area/447"},"SortOrder":0}]}}';
+
+    const response: Response = Response.fromJSON(JSON.parse(line));
+    expect(response?.Header.StatusCode?.code).toEqual(200);
+    expect(response?.CommuniqueType).toEqual('ReadResponse');
+    // @ts-ignore
+    expect(response.Body.Zones[0].ControlType).toEqual('Dimmed');
 });
