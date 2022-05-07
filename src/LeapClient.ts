@@ -73,6 +73,12 @@ export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClie
         if (tag === undefined) {
             tag = uuidv4();
         }
+        if (this.inFlightRequests.has(tag)) {
+            const ifr = this.inFlightRequests.get(tag)!;
+            ifr.reject(new Error("Request clobbered due to tag re-use"));
+            clearTimeout(ifr.timeout);
+            this.inFlightRequests.delete(tag);
+        }
 
         let requestResolve: (response: Response) => void = () => {
             // this gets replaced
@@ -99,10 +105,17 @@ export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClie
             message.Body = body;
         }
 
-        const timeout = setTimeout(() => {
-            this.inFlightRequests.delete(tag!);
-            requestReject(new Error('request with tag' + tag + 'timed out'));
-        }, 5000);
+        const msg = JSON.stringify(message);
+        logDebug('request handler about to write:', msg);
+
+        let timeout;
+        this.socket?.write(msg + '\n', () => {
+            timeout = setTimeout(() => {
+                requestReject(new Error('request with tag' + tag + 'timed out'));
+            }, 5000);
+
+            logDebug('sent request tag', tag, ' successfully');
+        });
 
         this.inFlightRequests.set(tag, {
             message,
@@ -111,12 +124,6 @@ export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClie
             timeout,
         });
         logDebug('added promise to inFlightRequests with tag key', tag);
-
-        const msg = JSON.stringify(message);
-        logDebug('request handler about to write:', msg);
-        this.socket?.write(msg + '\n', () => {
-            logDebug('sent request tag', tag, ' successfully');
-        });
 
         return requestPromise;
     }
@@ -147,6 +154,11 @@ export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClie
     }
 
     public close() {
+        // this method does not prevent the client from being used; instead it
+        // only closes the connection. subsequent requests will trigger this
+        // client to attempt to reconnect. make sure nobody is going to try to
+        // use this client before you dispose of it.
+
         this.connected = null;
         this.socket?.end();
     }

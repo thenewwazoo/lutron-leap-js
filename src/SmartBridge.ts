@@ -22,7 +22,7 @@ import TypedEmitter from 'typed-emitter';
 const logDebug = debug('leap:bridge');
 
 export const LEAP_PORT = 8081;
-const PING_INTERVAL_MS = 60000;
+const PING_INTERVAL_MS = 300000;
 const PING_TIMEOUT_MS = 10000;
 
 export interface BridgeInfo {
@@ -39,7 +39,7 @@ interface SmartBridgeEvents {
 }
 
 export class SmartBridge extends (EventEmitter as new () => TypedEmitter<SmartBridgeEvents>) {
-    private pingLooper!: ReturnType<typeof setTimeout>; // this is indeed definitely set in the constructor
+    private pingLooper: ReturnType<typeof setInterval> | null = null;
 
     constructor(public readonly bridgeID: string, public client: LeapClient) {
         super();
@@ -47,32 +47,60 @@ export class SmartBridge extends (EventEmitter as new () => TypedEmitter<SmartBr
         client.on('unsolicited', this._handleUnsolicited.bind(this));
         client.on('disconnected', this._handleDisconnect.bind(this));
 
-        this._setPingTimeout();
+        this.startPingLoop();
     }
 
-    private _setPingTimeout(): void {
-        this.pingLooper = setTimeout((): void => {
-            clearTimeout(this.pingLooper);
-            this.pingLoop();
-        }, PING_INTERVAL_MS);
-    }
-
-    private pingLoop(): void {
-        const timeout = new Promise((resolve, reject): void => {
-            setTimeout((): void => {
-                reject('Ping timeout');
-            }, PING_TIMEOUT_MS);
-        });
-
-        Promise.race([this.ping(), timeout])
-            .then(() => {
-                clearTimeout(this.pingLooper);
-                this._setPingTimeout();
-            })
-            .catch((e) => {
-                logDebug(e);
-                this.client.close();
+    private startPingLoop(): void {
+        this.pingLooper = setInterval((): void => {
+            const pingPromise = this.client.request('ReadRequest', '/server/1/status/ping');
+            const timeoutPromise = new Promise((resolve, reject): void => {
+                setTimeout((): void => {
+                    reject('Ping timeout');
+                }, PING_TIMEOUT_MS);
             });
+
+            Promise.race([pingPromise, timeoutPromise])
+                .then(resp => {
+                    // if the ping succeeds, there's not really anything to do.
+                    logDebug("Ping succeeded", resp);
+                })
+                .catch(e => {
+                    // if it fails, however, what do we do? the client's
+                    // behavior is to attempt to re-open the connection if it's
+                    // lost. that means calling `this.client.close()` might
+                    // clobber in-flight requests made between the ping timing
+                    // out and the attempt to close it. that's bad.
+                    //
+                    // I think the answer is: nothing. future attempts to use
+                    // the client will block (and potentially eventually time
+                    // out), and we don't ever want to prevent that happening
+                    // unless specifically requested.
+                    logDebug("Ping failed:", e);
+                });
+
+        }, PING_INTERVAL_MS);
+
+    }
+
+    public start(): void {
+        // not much to do here, but it needs to exist if close exists.
+        if (this.pingLooper === null) {
+            logDebug("Bridge starting");
+            this.startPingLoop();
+        }
+    }
+
+    public close(): void {
+        // much as with LeapClient.close, this method will not actually prevent
+        // some caller from causing the client to reconnect. all this really
+        // does is tell the client to close the socket, and kills the
+        // keep-alive loop.
+        logDebug('bridge id', this.bridgeID, 'closing');
+        if (this.pingLooper !== null) {
+            clearTimeout(this.pingLooper);
+            this.pingLooper = null;
+        }
+        this.client.close();
     }
 
     public async ping(): Promise<Response> {
@@ -193,13 +221,8 @@ export class SmartBridge extends (EventEmitter as new () => TypedEmitter<SmartBr
     }
 
     private _handleDisconnect(): void {
+        // nothing to do here
         logDebug('bridge id', this.bridgeID, 'disconnected.');
-        clearTimeout(this.pingLooper);
     }
 
-    public close(): void {
-        logDebug('bridge id', this.bridgeID, 'closing');
-        clearTimeout(this.pingLooper);
-        this.client.close();
-    }
 }
