@@ -121,10 +121,11 @@ export class BridgeFinder extends (EventEmitter as new () => TypedEmitter<Bridge
         const resolver = mdns({
             multicast: true,
             ttl: 1,
-            port: 0,
+            // RFC6762 5.2 "MUST send its Multicast DNS queries from UDP source port 5353"
+            port: 5353,
         });
 
-        const _id = Math.floor(Math.random() * (65535 - 1 + 1)) + 1;
+        const _id = Math.floor(Math.random() * 65534) + 1;
         const tgt: string = await new Promise((resolve, reject) => {
             resolver.on('response', (packet: any) => {
                 if (packet.id === _id) {
