@@ -41,7 +41,6 @@
     },
     "dependencies": {
         "ip-address": "^7.1.0",
-        "multicast-dns": "^7.2.3",
         "tinkerhub-mdns": "^0.5.1",
         "uuid": "^8.3.2"
     }

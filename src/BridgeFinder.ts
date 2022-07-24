@@ -3,7 +3,6 @@ import * as util from 'util';
 import { EventEmitter } from 'events';
 
 import ipaddress = require('ip-address');
-import mdns = require('multicast-dns');
 import dnspacket = require('dns-packet');
 import { Protocol, MDNSServiceDiscovery, MDNSService } from 'tinkerhub-mdns';
 import TypedEmitter from 'typed-emitter';
@@ -118,52 +117,11 @@ export class BridgeFinder extends (EventEmitter as new () => TypedEmitter<Bridge
     }
 
     private async getBridgeID(mdnsID: string): Promise<string> {
-        const resolver = mdns({
-            multicast: true,
-            ttl: 1,
-            // RFC6762 5.2 "MUST send its Multicast DNS queries from UDP source port 5353"
-            port: 5353,
-        });
-
-        const _id = Math.floor(Math.random() * 65534) + 1;
-        const tgt: string = await new Promise((resolve, reject) => {
-            resolver.on('response', (packet: any) => {
-                if (packet.id === _id) {
-                    if (packet.answers.length !== 1) {
-                        reject(new Error(`bad srv response: ${util.inspect(packet)}`));
-                    }
-
-                    resolve(packet.answers[0].data.target);
-                }
-            });
-
-            resolver.query(
-                {
-                    // tslint:disable:no-bitwise
-                    flags: dnspacket.RECURSION_DESIRED | dnspacket.AUTHENTIC_DATA,
-                    id: _id,
-                    questions: [
-                        {
-                            name: mdnsID,
-                            type: 'SRV',
-                            class: 'IN',
-                        },
-                    ],
-                    additionals: [
-                        {
-                            name: '.',
-                            type: 'OPT',
-                            udpPayloadSize: 0x1000,
-                        },
-                    ],
-                },
-                {
-                    port: 5353,
-                    address: '224.0.0.251',
-                },
-            );
-
-        });
+        // @ts-ignore: reaching into the serviceData private member lets us
+        // avoid having to repeat a query for the SRV record. there's no
+        // "official" way to get to it, but we can rely on it implicitly
+        // existing.
+        const tgt: string = this.discovery!.serviceData.get(mdnsID).SRV._record.target;
 
         try {
             return tgt.match(/[Ll]utron-(?<id>\w+)\.local/)!.groups!.id.toUpperCase();
