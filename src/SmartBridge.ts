@@ -33,7 +33,7 @@ export interface BridgeInfo {
     serialNumber: string;
 }
 
-interface SmartBridgeEvents {
+type SmartBridgeEvents = {
     unsolicited: (bridgeID: string, response: Response) => void;
     disconnected: () => void;
 }

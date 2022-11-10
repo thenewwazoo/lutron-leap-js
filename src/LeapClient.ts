@@ -26,7 +26,7 @@ interface MessageDetails {
     timeout: ReturnType<typeof setTimeout>;
 }
 
-interface LeapClientEvents {
+type LeapClientEvents = {
     unsolicited: (response: Response) => void;
     disconnected: () => void;
 }

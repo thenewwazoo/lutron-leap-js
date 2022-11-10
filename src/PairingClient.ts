@@ -8,7 +8,7 @@ import { assocCert, assocKey, assocCACert } from './Association';
 
 const logDebug = debug('leap:pairing');
 
-interface PairingEvents {
+type PairingEvents = {
     message: (response: object) => void;
     disconnected: () => void;
 }

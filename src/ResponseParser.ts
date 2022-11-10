@@ -6,7 +6,7 @@ import TypedEmitter from 'typed-emitter';
 
 const logDebug = debug('leap:responseparser');
 
-interface ResponseEvents {
+type ResponseEvents = {
     response: (response: Response) => void;
 }
 

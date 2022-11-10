@@ -12,7 +12,7 @@ import { LeapClient } from './LeapClient';
 
 const logDebug = debug('leap:protocol:discovery');
 
-interface BridgeFinderEvents {
+type BridgeFinderEvents = {
     discovered: (bridgeInfo: BridgeNetInfo) => void;
     failed: (error: Error) => void;
 }
