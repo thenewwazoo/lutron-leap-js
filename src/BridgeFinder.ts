@@ -8,7 +8,6 @@ import { Protocol, MDNSServiceDiscovery, MDNSService } from 'tinkerhub-mdns';
 import TypedEmitter from 'typed-emitter';
 
 import { SmartBridge, LEAP_PORT } from './SmartBridge';
-import { LeapClient } from './LeapClient';
 
 const logDebug = debug('leap:protocol:discovery');
 

@@ -10,7 +10,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 const logDebug = debug('leap:protocol:client');
 
-interface Message {
+export interface Message {
     CommuniqueType: string;
     Header: {
         ClientTag: string;
