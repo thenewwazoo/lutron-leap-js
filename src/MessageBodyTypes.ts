@@ -35,6 +35,7 @@ export type MessageBodyType =
     | 'OneButtonStatusEvent'
     | 'MultipleOccupancyGroupStatus'
     | 'OneOccupancyGroupDefinition'
+    | 'OneClientSettingDefinition'
     | 'ExceptionDetail';
 
 export class OneDeviceStatus {
@@ -110,13 +111,11 @@ export class OneZoneStatus {
 }
 
 export class MultipleZoneStatus {
-    ZonsStatuses!: ZoneStatus[];
+    ZoneStatuses!: ZoneStatus[];
 }
 
 export class OnePingResponse {
-    PingResponse!: {
-        LEAPVersion: number;
-    };
+    PingResponse!: PingResponseDefinition;
 }
 
 export class OneButtonGroupDefinition {
@@ -137,6 +136,10 @@ export class MultipleOccupancyGroupStatus {
 
 export class OneOccupancyGroupDefinition {
     OccupancyGroup!: OccupancyGroupDefinition;
+}
+
+export class OneClientSettingDefinition {
+    ClientSetting!: ClientSettingDefinition;
 }
 
 export class ExceptionDetail {
@@ -169,6 +172,7 @@ export type BodyType =
     | OneButtonStatusEvent
     | MultipleOccupancyGroupStatus
     | OccupancyGroupDefinition
+    | OneClientSettingDefinition
     | ExceptionDetail;
 
 export function parseBody(type: MessageBodyType, data: object): BodyType {
@@ -252,6 +256,9 @@ export function parseBody(type: MessageBodyType, data: object): BodyType {
             break;
         case 'OneOccupancyGroupDefinition':
             theType = OneOccupancyGroupDefinition;
+            break;
+        case 'OneClientSettingDefinition':
+            theType = OneClientSettingDefinition;
             break;
         default:
             throw new UnimplementedMessageBodyType(type as string);
@@ -358,6 +365,8 @@ export type DeviceDefinition = Href & {
             Utc: string;
         };
     };
+    AddressedState?: "Addressed" | "Unaddressed" | "Unknown";
+    IsThisDevice?: boolean;
 };
 
 type OnOrOff = 'On' | 'Off';
@@ -490,4 +499,16 @@ type AssociatedArea = Href & {
 
 type AssociatedSensor = Href & {
     OccupancySensor: Href;
+};
+
+export type ClientSettingDefinition = Href & {
+    ClientMajorVersion: number;
+    ClientMinorVersion: number;
+    Permissions: {
+        SessionRole: string;
+    };
+};
+
+export type PingResponseDefinition = {
+    LEAPVersion: number;
 };

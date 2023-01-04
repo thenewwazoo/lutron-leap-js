@@ -1,8 +1,16 @@
 import { ConnectionOptions, TLSSocket, connect, createSecureContext } from 'tls';
 import debug from 'debug';
+import * as fs from 'fs';
 import { EventEmitter } from 'events';
 
-import { Response, ResponseWithTag } from './Messages';
+import { CommuniqueType, Response, ResponseWithTag } from './Messages';
+import {
+    OnePingResponse,
+    PingResponseDefinition,
+    ClientSettingDefinition,
+    OneClientSettingDefinition,
+    ExceptionDetail
+} from './MessageBodyTypes';
 import { ResponseParser } from './ResponseParser';
 
 import TypedEmitter from 'typed-emitter';
@@ -11,7 +19,7 @@ import { v4 as uuidv4 } from 'uuid';
 const logDebug = debug('leap:protocol:client');
 
 export interface Message {
-    CommuniqueType: string;
+    CommuniqueType: CommuniqueType;
     Header: {
         ClientTag: string;
         Url: string;
@@ -42,7 +50,16 @@ export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClie
 
     private responseParser: ResponseParser;
 
-    constructor(private readonly host: string, private readonly port: number, ca: string, key: string, cert: string) {
+    private sslKeylogFile?: fs.WriteStream;
+
+    constructor(
+        private readonly host: string,
+        private readonly port: number,
+        ca: string,
+        key: string,
+        cert: string,
+        sslKeylogFile?: fs.WriteStream,
+    ) {
         super();
         logDebug('new LeapClient being constructed');
         this.connected = null;
@@ -60,14 +77,20 @@ export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClie
 
         this.responseParser = new ResponseParser();
         this.responseParser.on('response', this._handleResponse.bind(this));
+
+        if (sslKeylogFile !== undefined) {
+            this.sslKeylogFile = sslKeylogFile;
+        }
     }
 
     public async request(
-        communiqueType: string,
+        communiqueType: CommuniqueType,
         url: string,
         body?: Record<string, unknown>,
         tag?: string,
     ): Promise<Response> {
+        logDebug(`request ${communiqueType} for url ${url}`);
+
         await this.connect();
 
         if (tag === undefined) {
@@ -139,7 +162,7 @@ export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClie
 
                 this.socket.once('secureConnect', () => {
                     logDebug('securely connected');
-                    this._onConnect(resolve);
+                    this._onConnect(resolve, reject);
                 });
 
                 this.socket.once('error', (e) => {
@@ -147,6 +170,10 @@ export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClie
                     this.connected = null;
                     reject(e);
                 });
+
+                if (this.sslKeylogFile !== undefined) {
+                    this.socket.on('keylog', (line) => this.sslKeylogFile!.write(line));
+                }
             });
         }
 
@@ -166,7 +193,7 @@ export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClie
     public async subscribe(
         url: string,
         callback: (resp: Response) => void,
-        communiqueType?: string,
+        communiqueType?: CommuniqueType | undefined,
         body?: Record<string, unknown>,
         tag?: string,
     ): Promise<ResponseWithTag> {
@@ -191,7 +218,7 @@ export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClie
         this.taggedSubscriptions.clear();
     }
 
-    private _onConnect(next: () => void): void {
+    private _onConnect(next: () => void, _reject: (reason: any) => void): void {
         logDebug('_onConnect called');
 
         const socketErr = (err: Error) => {
@@ -218,6 +245,7 @@ export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClie
         this.socket?.on('end', socketEnd);
 
         return next();
+
     }
 
     private socketDataHandler (data: Buffer): void {
@@ -251,4 +279,31 @@ export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClie
             this.emit('unsolicited', response);
         }
     }
+
+    public async setVersion(): Promise<ExceptionDetail | ClientSettingDefinition> {
+        logDebug("setVersion request");
+        const resp = await this.request("UpdateRequest", "/clientsetting", {
+            ClientSetting: {
+                ClientMajorVersion: 1,
+            }
+        });
+
+        switch (resp.CommuniqueType) {
+            case "ExceptionResponse": {
+                return resp.Body! as ExceptionDetail;
+            }
+            case "UpdateResponse": {
+                return (resp.Body! as OneClientSettingDefinition).ClientSetting;
+            }
+            default: {
+                throw new Error("bad communique type");
+            }
+        }
+    }
+
+    public async ping(): Promise<PingResponseDefinition> {
+        const resp = await this.request('ReadRequest', '/server/1/status/ping');
+        return (resp.Body! as OnePingResponse).PingResponse;
+    }
+
 }

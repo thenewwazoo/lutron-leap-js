@@ -2,7 +2,23 @@
 
 import { parseBody, MessageBodyType, BodyType } from './MessageBodyTypes';
 
-type CommuniqueType = string;
+export type CommuniqueType =
+    | 'CreateRequest'
+    | 'CreateResponse'
+    | 'DeleteRequest'
+    | 'DeleteResponse'
+    | 'ExceptionResponse'
+    | 'MetadataRequest'
+    | 'MetadataResponse'
+    | 'ReadRequest'
+    | 'ReadResponse'
+    | 'SubscribeRequest'
+    | 'SubscribeResponse'
+    | 'UnsubscribeRequest'
+    | 'UnsubscribeResponse'
+    | 'UpdateRequest'
+    | 'UpdateResponse'
+;
 
 export interface ResponseHeaderJSON {
     MessageBodyType?: string;

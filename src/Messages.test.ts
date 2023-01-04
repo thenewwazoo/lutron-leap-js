@@ -225,3 +225,14 @@ test('MultipleZoneDefinition', () => {
     // @ts-ignore
     expect(response.Body.Zones[0].ControlType).toEqual('Dimmed');
 });
+
+test('OneClientSettingDefinition', () => {
+    const line =
+        '{"CommuniqueType":"UpdateResponse","Header":{"MessageBodyType":"OneClientSettingDefinition","StatusCode":"200 OK","Url":"/clientsetting","ClientTag":"40c05b02-9ea0-46b1-9fb5-4246d7f67e32"},"Body":{"ClientSetting":{"href":"/clientsetting","ClientMajorVersion":1,"ClientMinorVersion":115,"Permissions":{"SessionRole":"Admin"}}}}';
+
+    const response: Response = Response.fromJSON(JSON.parse(line));
+    expect(response?.Header.StatusCode?.code).toEqual(200);
+    expect(response?.CommuniqueType).toEqual('UpdateResponse');
+    // @ts-ignore
+    expect(response.Body.ClientSetting.ClientMinorVersion).toEqual(115);
+});

@@ -171,7 +171,6 @@ export class SmartBridge extends (EventEmitter as new () => TypedEmitter<SmartBr
                     switch (resp.CommuniqueType) {
                         case 'ExceptionResponse':
                             return resp.Body! as ExceptionDetail;
-                            break;
                         case 'ReadResponse':
                             return (resp.Body! as OneButtonGroupDefinition).ButtonGroup;
                         default:
