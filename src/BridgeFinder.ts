@@ -14,7 +14,7 @@ const logDebug = debug('leap:protocol:discovery');
 type BridgeFinderEvents = {
     discovered: (bridgeInfo: BridgeNetInfo) => void;
     failed: (error: Error) => void;
-}
+};
 
 type HostAndPort = {
     host: string;
@@ -75,7 +75,6 @@ export class BridgeFinder extends (EventEmitter as new () => TypedEmitter<Bridge
         };
     }
 
-
     public destroy(): void {
         if (this.discovery) {
             this.discovery.destroy();
@@ -128,5 +127,4 @@ export class BridgeFinder extends (EventEmitter as new () => TypedEmitter<Bridge
             throw new Error(`could not get bridge serial number from ${tgt}: ${e}`);
         }
     }
-
 }

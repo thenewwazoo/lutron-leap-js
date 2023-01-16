@@ -11,7 +11,7 @@ const logDebug = debug('leap:pairing');
 type PairingEvents = {
     message: (response: object) => void;
     disconnected: () => void;
-}
+};
 
 export class PairingClient extends (EventEmitter as new () => TypedEmitter<PairingEvents>) {
     private connected: Promise<void> | null;
@@ -29,7 +29,7 @@ export class PairingClient extends (EventEmitter as new () => TypedEmitter<Pairi
         const context = createSecureContext({
             ca: assocCACert,
             key: assocKey,
-            cert: assocCert
+            cert: assocCert,
         });
 
         this.tlsOptions = {
@@ -41,7 +41,6 @@ export class PairingClient extends (EventEmitter as new () => TypedEmitter<Pairi
 
     public connect(): Promise<void> {
         if (!this.connected) {
-
             logDebug('needs to connect');
             this.connected = new Promise((resolve, reject) => {
                 logDebug('about to connect');
@@ -69,8 +68,7 @@ export class PairingClient extends (EventEmitter as new () => TypedEmitter<Pairi
                     this.emit('disconnected');
                 });
 
-            this.socket.on('data', this.socketDataHandler.bind(this));
-
+                this.socket.on('data', this.socketDataHandler.bind(this));
             });
         }
 

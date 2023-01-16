@@ -17,8 +17,7 @@ export type CommuniqueType =
     | 'UnsubscribeRequest'
     | 'UnsubscribeResponse'
     | 'UpdateRequest'
-    | 'UpdateResponse'
-;
+    | 'UpdateResponse';
 
 export interface ResponseHeaderJSON {
     MessageBodyType?: string;

@@ -5,11 +5,13 @@ import { EventEmitter } from 'events';
 
 import { CommuniqueType, Response, ResponseWithTag } from './Messages';
 import {
+    BodyType,
+    Href,
     OnePingResponse,
     PingResponseDefinition,
     ClientSettingDefinition,
     OneClientSettingDefinition,
-    ExceptionDetail
+    ExceptionDetail,
 } from './MessageBodyTypes';
 import { ResponseParser } from './ResponseParser';
 
@@ -37,7 +39,7 @@ interface MessageDetails {
 type LeapClientEvents = {
     unsolicited: (response: Response) => void;
     disconnected: () => void;
-}
+};
 
 export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClientEvents>) {
     private connected: Promise<void> | null;
@@ -83,6 +85,17 @@ export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClie
         }
     }
 
+    public async retrieve<T extends BodyType>(href: Href, endpoint?: string): Promise<T> {
+        const resp = await this.request('ReadRequest', href.href + (endpoint !== undefined ? endpoint : ''));
+        if (resp.Body === undefined) {
+            throw new Error(`could not get ${href.href}: no body`);
+        }
+        if (resp.Body instanceof ExceptionDetail) {
+            throw new Error(`could not get ${href.href}: ${resp.Body.Message}`);
+        }
+        return resp.Body as T;
+    }
+
     public async request(
         communiqueType: CommuniqueType,
         url: string,
@@ -98,7 +111,7 @@ export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClie
         }
         if (this.inFlightRequests.has(tag)) {
             const ifr = this.inFlightRequests.get(tag)!;
-            ifr.reject(new Error("Request clobbered due to tag re-use"));
+            ifr.reject(new Error('Request clobbered due to tag re-use'));
             clearTimeout(ifr.timeout);
             this.inFlightRequests.delete(tag);
         }
@@ -155,7 +168,6 @@ export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClie
         if (!this.connected) {
             logDebug('needs to connect');
             this.connected = new Promise((resolve, reject) => {
-
                 this.socket = connect(this.port, this.host, this.tlsOptions, () => {
                     logDebug('connected!');
                 });
@@ -245,14 +257,13 @@ export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClie
         this.socket?.on('end', socketEnd);
 
         return next();
-
     }
 
-    private socketDataHandler (data: Buffer): void {
+    private socketDataHandler(data: Buffer): void {
         const s = data.toString();
         logDebug('got data from socket:', s);
         this.responseParser.handleData(s);
-    };
+    }
 
     private _handleResponse(response: Response): void {
         const tag = response.Header.ClientTag;
@@ -281,22 +292,22 @@ export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClie
     }
 
     public async setVersion(): Promise<ExceptionDetail | ClientSettingDefinition> {
-        logDebug("setVersion request");
-        const resp = await this.request("UpdateRequest", "/clientsetting", {
+        logDebug('setVersion request');
+        const resp = await this.request('UpdateRequest', '/clientsetting', {
             ClientSetting: {
                 ClientMajorVersion: 1,
-            }
+            },
         });
 
         switch (resp.CommuniqueType) {
-            case "ExceptionResponse": {
+            case 'ExceptionResponse': {
                 return resp.Body! as ExceptionDetail;
             }
-            case "UpdateResponse": {
+            case 'UpdateResponse': {
                 return (resp.Body! as OneClientSettingDefinition).ClientSetting;
             }
             default: {
-                throw new Error("bad communique type");
+                throw new Error('bad communique type');
             }
         }
     }
@@ -305,5 +316,4 @@ export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClie
         const resp = await this.request('ReadRequest', '/server/1/status/ping');
         return (resp.Body! as OnePingResponse).PingResponse;
     }
-
 }

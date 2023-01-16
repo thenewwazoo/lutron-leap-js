@@ -8,7 +8,7 @@ const logDebug = debug('leap:responseparser');
 
 type ResponseEvents = {
     response: (response: Response) => void;
-}
+};
 
 export class ResponseParser extends (EventEmitter as new () => TypedEmitter<ResponseEvents>) {
     private buffer = '';

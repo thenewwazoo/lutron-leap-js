@@ -1,4 +1,5 @@
 import { Response, ResponseHeader, ResponseStatus } from './Messages';
+import * as mb from './MessageBodyTypes';
 
 test('newly-discovered device', () => {
     const line =
@@ -235,4 +236,37 @@ test('OneClientSettingDefinition', () => {
     expect(response?.CommuniqueType).toEqual('UpdateResponse');
     // @ts-ignore
     expect(response.Body.ClientSetting.ClientMinorVersion).toEqual(115);
+});
+
+test('MultipleVirtualButtons', () => {
+    const line =
+        '{"CommuniqueType": "ReadResponse", "Header": {"MessageBodyType": "MultipleVirtualButtonDefinition", "StatusCode": "200 OK", "Url": "/virtualbutton"}, "Body": {"VirtualButtons": [{"href": "/virtualbutton/1", "Name": "Al llegar a casa", "ButtonNumber": 0, "ProgrammingModel": {"href": "/programmingmodel/2"}, "Parent": {"href": "/project"}, "IsProgrammed": false}, {"href": "/virtualbutton/2", "Name": "Al salir de casa", "ButtonNumber": 1, "ProgrammingModel": {"href": "/programmingmodel/3"}, "Parent": {"href": "/project"}, "IsProgrammed": false}]}}';
+
+    const response: Response = Response.fromJSON(JSON.parse(line));
+    expect(response?.Header.StatusCode?.code).toEqual(200);
+    expect(response?.Header.MessageBodyType).toEqual('MultipleVirtualButtonDefinition');
+    expect(response?.CommuniqueType).toEqual('ReadResponse');
+    // @ts-ignore
+    expect(response.Body.VirtualButtons.length).toEqual(2);
+});
+
+test('OneVirtualButton', () => {
+    const line =
+        '{"CommuniqueType": "ReadResponse", "Header": {"MessageBodyType": "OneVirtualButtonDefinition", "StatusCode": "200 OK", "Url": "/virtualbutton/4"}, "Body": {"VirtualButton": {"href": "/virtualbutton/4", "Name": "Foo", "ButtonNumber": 3, "ProgrammingModel": {"href": "/programmingmodel/5"}, "Parent": {"href": "/project"}, "IsProgrammed": true}}}';
+
+    const response: Response = Response.fromJSON(JSON.parse(line));
+    // @ts-ignore
+    expect(response.Body.VirtualButton.Name).toEqual('Foo');
+    // @ts-ignore
+    expect(response.Body.VirtualButton.IsProgrammed).toEqual(true);
+});
+
+test('UndefinedPresetThings', () => {
+    const line =
+        '{"CommuniqueType": "ReadResponse", "Header": {"MessageBodyType": "OnePresetDefinition", "StatusCode": "200 OK", "Url": "/preset/5"}, "Body": {"Preset": {"href": "/preset/5", "Parent": {"href": "/programmingmodel/5"}, "PresetAssignments": [{"href": "/presetassignment/175"}], "DimmedLevelAssignments": [{"href": "/dimmedlevelassignment/175"}]}}}';
+
+    const response: Response = Response.fromJSON(JSON.parse(line));
+    const body = response.Body! as mb.OnePresetDefinition;
+    expect(body.Preset.FanSpeedAssignments).toBeUndefined();
+    expect(body.Preset.PresetAssignments.length).toEqual(1);
 });

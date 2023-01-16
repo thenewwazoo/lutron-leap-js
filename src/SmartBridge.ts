@@ -36,7 +36,7 @@ export interface BridgeInfo {
 type SmartBridgeEvents = {
     unsolicited: (bridgeID: string, response: Response) => void;
     disconnected: () => void;
-}
+};
 
 export class SmartBridge extends (EventEmitter as new () => TypedEmitter<SmartBridgeEvents>) {
     private pingLooper: ReturnType<typeof setInterval> | null = null;
@@ -60,11 +60,11 @@ export class SmartBridge extends (EventEmitter as new () => TypedEmitter<SmartBr
             });
 
             Promise.race([pingPromise, timeoutPromise])
-                .then(resp => {
+                .then((resp) => {
                     // if the ping succeeds, there's not really anything to do.
-                    logDebug("Ping succeeded", resp);
+                    logDebug('Ping succeeded', resp);
                 })
-                .catch(e => {
+                .catch((e) => {
                     // if it fails, however, what do we do? the client's
                     // behavior is to attempt to re-open the connection if it's
                     // lost. that means calling `this.client.close()` might
@@ -75,17 +75,15 @@ export class SmartBridge extends (EventEmitter as new () => TypedEmitter<SmartBr
                     // the client will block (and potentially eventually time
                     // out), and we don't ever want to prevent that happening
                     // unless specifically requested.
-                    logDebug("Ping failed:", e);
+                    logDebug('Ping failed:', e);
                 });
-
         }, PING_INTERVAL_MS);
-
     }
 
     public start(): void {
         // not much to do here, but it needs to exist if close exists.
         if (this.pingLooper === null) {
-            logDebug("Bridge starting");
+            logDebug('Bridge starting');
             this.startPingLoop();
         }
     }
@@ -187,7 +185,7 @@ export class SmartBridge extends (EventEmitter as new () => TypedEmitter<SmartBr
      */
     public async getButtonsFromGroup(bgroup: ButtonGroupDefinition): Promise<ButtonDefinition[]> {
         return Promise.all(
-            bgroup.Buttons.map((button: ButtonDefinition) =>
+            bgroup.Buttons.map((button: Href) =>
                 this.client
                     .request('ReadRequest', button.href)
                     .then((resp: Response) => (resp.Body! as OneButtonDefinition).Button),
@@ -222,6 +220,6 @@ export class SmartBridge extends (EventEmitter as new () => TypedEmitter<SmartBr
     private _handleDisconnect(): void {
         // nothing to do here
         logDebug('bridge id', this.bridgeID, 'disconnected.');
+        this.emit('disconnected');
     }
-
 }

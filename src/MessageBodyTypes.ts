@@ -36,6 +36,13 @@ export type MessageBodyType =
     | 'MultipleOccupancyGroupStatus'
     | 'OneOccupancyGroupDefinition'
     | 'OneClientSettingDefinition'
+    | 'MultipleVirtualButtonDefinition'
+    | 'OneVirtualButtonDefinition'
+    | 'OneProgrammingModelDefinition'
+    | 'OnePresetAssignmentDefinition'
+    | 'OneDimmedLevelAssignmentDefinition'
+    | 'OneFanSpeedAssignmentDefinition'
+    | 'OneTiltAssignmentDefinition'
     | 'ExceptionDetail';
 
 export class OneDeviceStatus {
@@ -142,6 +149,34 @@ export class OneClientSettingDefinition {
     ClientSetting!: ClientSettingDefinition;
 }
 
+export class MultipleVirtualButtonDefinition {
+    VirtualButtons!: VirtualButtonDefinition[];
+}
+
+export class OneVirtualButtonDefinition {
+    VirtualButton!: VirtualButtonDefinition;
+}
+
+export class OneProgrammingModelDefinition {
+    ProgrammingModel!: ProgrammingModelDefinition;
+}
+
+export class OnePresetAssignmentDefinition {
+    PresetAssignment!: PresetAssignmentDefinition;
+}
+
+export class OneDimmedLevelAssignmentDefinition {
+    DimmedLevelAssignment!: DimmedLevelAssignmentDefinition;
+}
+
+export class OneFanSpeedAssignmentDefinition {
+    FanSpeedAssignment!: FanSpeedAssignmentDefinition;
+}
+
+export class OneTiltAssignmentDefinition {
+    TiltAssignment!: TiltAssignmentDefinition;
+}
+
 export class ExceptionDetail {
     Message = '';
 }
@@ -173,6 +208,13 @@ export type BodyType =
     | MultipleOccupancyGroupStatus
     | OccupancyGroupDefinition
     | OneClientSettingDefinition
+    | MultipleVirtualButtonDefinition
+    | OneVirtualButtonDefinition
+    | OneProgrammingModelDefinition
+    | OnePresetAssignmentDefinition
+    | OneDimmedLevelAssignmentDefinition
+    | OneFanSpeedAssignmentDefinition
+    | OneTiltAssignmentDefinition
     | ExceptionDetail;
 
 export function parseBody(type: MessageBodyType, data: object): BodyType {
@@ -260,6 +302,27 @@ export function parseBody(type: MessageBodyType, data: object): BodyType {
         case 'OneClientSettingDefinition':
             theType = OneClientSettingDefinition;
             break;
+        case 'MultipleVirtualButtonDefinition':
+            theType = MultipleVirtualButtonDefinition;
+            break;
+        case 'OneVirtualButtonDefinition':
+            theType = OneVirtualButtonDefinition;
+            break;
+        case 'OneProgrammingModelDefinition':
+            theType = OneProgrammingModelDefinition;
+            break;
+        case 'OnePresetAssignmentDefinition':
+            theType = OnePresetAssignmentDefinition;
+            break;
+        case 'OneDimmedLevelAssignmentDefinition':
+            theType = OneDimmedLevelAssignmentDefinition;
+            break;
+        case 'OneFanSpeedAssignmentDefinition':
+            theType = OneFanSpeedAssignmentDefinition;
+            break;
+        case 'OneTiltAssignmentDefinition':
+            theType = OneTiltAssignmentDefinition;
+            break;
         default:
             throw new UnimplementedMessageBodyType(type as string);
     }
@@ -270,11 +333,11 @@ export type Href = {
     href: string;
 };
 
-type PhaseSetting = Href & {
+export type PhaseSetting = Href & {
     Direction: string;
 };
 
-type TuningSetting = Href & {
+export type TuningSetting = Href & {
     HighEndTrim: number;
     LowEndTrim: number;
 };
@@ -293,23 +356,34 @@ export type AffectedZone = Href & {
     Zone: Zone;
 };
 
-type AdvancedToggleProperties = {
+export type AdvancedToggleProperties = {
     PrimaryPreset: Href;
     SecondaryPreset: Href;
 };
 
-type DualActionProperties = {
+export type DualActionProperties = {
     PressPreset: Href;
     ReleasePreset: Href;
 };
 
-type ProgrammingModel = Href & {
+export type ProgrammingModelType =
+    | 'SingleActionProgrammingModel'
+    | 'SingleSceneRaiseProgrammingModel'
+    | 'DualActionProgrammingModel'
+    | 'AdvancedToggleProgrammingModel'
+    | 'AdvancedConditionalProgrammingModel'
+    | 'SingleSceneLowerProgrammingModel'
+    | 'SimpleConditionalProgrammingModel'
+    | 'OpenStopCloseStopProgrammingModel'
+    | 'Unknown';
+
+export type ProgrammingModelDefinition = Href & {
     AdvancedToggleProperties: AdvancedToggleProperties;
     DualActionProperties: DualActionProperties;
     Name: string;
     Parent: Href;
     Preset: Href;
-    ProgrammingModelType: string;
+    ProgrammingModelType: ProgrammingModelType;
 };
 
 export type ButtonDefinition = Href & {
@@ -318,12 +392,12 @@ export type ButtonDefinition = Href & {
     Engraving: { Text: string };
     Name: string;
     Parent: Href;
-    ProgrammingModel: ProgrammingModel;
+    ProgrammingModel: ProgrammingModelDefinition;
 };
 
 export type ButtonGroupDefinition = Href & {
     AffectedZones: AffectedZone[];
-    Buttons: ButtonDefinition[];
+    Buttons: Href[];
     Parent: DeviceDefinition;
     ProgrammingType: string;
     SortOrder: number;
@@ -365,15 +439,15 @@ export type DeviceDefinition = Href & {
             Utc: string;
         };
     };
-    AddressedState?: "Addressed" | "Unaddressed" | "Unknown";
+    AddressedState?: 'Addressed' | 'Unaddressed' | 'Unknown';
     IsThisDevice?: boolean;
 };
 
-type OnOrOff = 'On' | 'Off';
+export type OnOrOff = 'On' | 'Off';
 
-type FanSpeedType = 'High' | 'MediumHigh' | 'Medium' | 'Low' | 'Off';
+export type FanSpeedType = 'High' | 'MediumHigh' | 'Medium' | 'Low' | 'Off';
 
-type ZoneStatus = Href & {
+export type ZoneStatus = Href & {
     CCOLevel: 'Open' | 'Closed';
     Level: number;
     SwitchedLevel: 'On' | 'Off';
@@ -385,10 +459,16 @@ type ZoneStatus = Href & {
     Tilt: number;
 };
 
-type ZoneDefinition = Href & {
+export type Category = {
+    Type: string;
+    SubType: string;
+    IsLight: boolean;
+};
+
+export type ZoneDefinition = Href & {
     Name: string;
     ControlType: string;
-    Category: { Type: string; IsLight: boolean };
+    Category: Category;
     Device: Href;
     AssociatedFacade: Href;
 };
@@ -410,13 +490,13 @@ export type DeviceHeard = {
     // PairedDevices: PairedDevice[]
 };
 
-type AreaStatus = Href & {
+export type AreaStatus = Href & {
     Level: number;
     OccupancyStatus: string;
     CurrentScene: Href;
 };
 
-type AreaDefinition = Href & {
+export type AreaDefinition = Href & {
     Name: string;
     ControlType: string;
     Parent: Href;
@@ -425,7 +505,7 @@ type AreaDefinition = Href & {
     AssociatedOccupancyGroups: Href[];
 };
 
-type ControlStationDefinition = Href & {
+export type ControlStationDefinition = Href & {
     Name: string;
     ControlType: string;
     Parent: Href;
@@ -434,7 +514,7 @@ type ControlStationDefinition = Href & {
     AssociatedGangedDevices: DeviceDefinition[];
 };
 
-type ProjectDefinition = Href & {
+export type ProjectDefinition = Href & {
     Name: string;
     ControlType: string;
     ProductType: string;
@@ -451,7 +531,7 @@ type ProjectDefinition = Href & {
     };
 };
 
-type LinkNodeDefinition = Href & {
+export type LinkNodeDefinition = Href & {
     Parent: Href;
     LinkType: string;
     SortOrder: number;
@@ -466,15 +546,39 @@ type LinkNodeDefinition = Href & {
     };
 };
 
-type AreaSceneDefinition = Href & {
+export type AreaSceneDefinition = Href & {
     Name: string;
     Parent: Href;
     Preset: Href;
     SortOrder: number;
 };
 
-type PresetDefinition = Href & {
+export type PresetAssignmentDefinition = Href & {
+    AffectedZone?: Zone;
+    Delay?: number;
+    Fade?: number;
+    Level?: number;
+    Name?: string;
+    Parent?: PresetDefinition;
+};
+
+export type PresetDefinition = Href & {
+    Name: string;
     Parent: Href;
+    ChildPresetAssignment: PresetAssignmentDefinition;
+    PresetAssignments: Href[]; // observed
+    FanSpeedAssignments: Href[]; // observed
+    TiltAssignments: Href[]; // observed
+    DimmedLevelAssignments: Href[];
+    FavoriteCycleAssignments: Href[];
+    NextTrackAssignments: Href[];
+    PauseAssignments: Href[];
+    PlayPauseToggleAssignments: Href[];
+    RaiseLowerAssignments: Href[];
+    ShadeLevelAssignments: Href[];
+    SonosPlayAssignments: Href[];
+    SwitchedLevelAssignments: Href[];
+    WhiteTuningLevelAssignments: Href[];
 };
 
 export type OccupancyStatus = 'Occupied' | 'Unoccupied' | 'Unknown';
@@ -484,7 +588,7 @@ export type OccupancyGroupStatus = Href & {
     OccupancyStatus: OccupancyStatus;
 };
 
-type OccupancyGroupDefinition = Href & {
+export type OccupancyGroupDefinition = Href & {
     AssociatedAreas?: AssociatedArea[];
     AssociatedSensors?: AssociatedSensor[];
     ProgrammingModel?: Href;
@@ -493,11 +597,11 @@ type OccupancyGroupDefinition = Href & {
     UnoccupiedActionSchedule?: { ScheduleType: string }; // also nfi
 };
 
-type AssociatedArea = Href & {
+export type AssociatedArea = Href & {
     Area: Href;
 };
 
-type AssociatedSensor = Href & {
+export type AssociatedSensor = Href & {
     OccupancySensor: Href;
 };
 
@@ -511,4 +615,36 @@ export type ClientSettingDefinition = Href & {
 
 export type PingResponseDefinition = {
     LEAPVersion: number;
+};
+
+export type VirtualButtonDefinition = Href & {
+    ButtonNumber: number;
+    Category: Category;
+    IsProgrammed: boolean;
+    Name: string;
+    Parent: Href;
+    ProgrammingModel: Href;
+};
+
+export type DimmedLevelAssignmentDefinition = Href & {
+    AssignableResource: Href;
+    DelayTime: string;
+    FadeTime: string;
+    Level: number;
+    Parent: Href;
+};
+
+export type FanSpeedAssignmentDefinition = Href & {
+    AssignableResource: Href;
+    DelayTime: string;
+    Parent: Href;
+    Speed: string;
+};
+
+// as observed
+export type TiltAssignmentDefinition = Href & {
+    Parent: Href;
+    AssignableResource: Href;
+    DelayTime: string;
+    Tilt: number;
 };
