@@ -1,7 +1,7 @@
 {
     "name": "lutron-leap",
-    "version": "3.3.0",
-    "description": "A LEAP library for Lutron Caseta Smart Bridge 2 devices",
+    "version": "4.0.0-alpha",
+    "description": "A Lutron LEAP protocol and device library",
     "keywords": [
         "lutron",
         "caseta",
@@ -14,8 +14,18 @@
     "homepage": "https://github.com/thenewwazoo/lutron-leap-js",
     "license": "GPL-3.0",
     "author": "Brandon Matthews <thenewwazoo@optimaltour.us>",
-    "main": "dist/index.js",
-    "types": "dist/index.d.ts",
+    "exports": {
+        ".": "./dist/index.js",
+        "./devices": "./dist/devices/index.js"
+    },
+    "types": "./dist/index.d.ts",
+    "typesVersions": {
+        "*" : {
+            "devices": [
+                "./dist/devices/index.d.ts"
+            ]
+        }
+    },
     "files": [
         "dist/**/*"
     ],
