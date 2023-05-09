@@ -18,6 +18,7 @@ export type MessageBodyType =
     | 'MultipleLinkNodeDefinition'
     | 'MultipleLinkDefinition'
     | 'OneControlStationDefinition'
+    | 'MultipleControlStationDefinition'
     | 'OneAreaDefinition'
     | 'MultipleAreaDefinition'
     | 'OneAreaStatus'
@@ -31,6 +32,7 @@ export type MessageBodyType =
     | 'MultipleZoneStatus'
     | 'OnePingResponse'
     | 'OneButtonGroupDefinition'
+    | 'MultipleButtonGroupDefinition'
     | 'OneButtonDefinition'
     | 'OneButtonStatusEvent'
     | 'MultipleOccupancyGroupStatus'
@@ -113,6 +115,10 @@ export class OneControlStationDefinition {
     ControlStation!: ControlStationDefinition;
 }
 
+export class MultipleControlStationDefinition {
+    ControlStations!: ControlStationDefinition[];
+}
+
 export class OneZoneStatus {
     ZoneStatus!: ZoneStatus;
 }
@@ -127,6 +133,10 @@ export class OnePingResponse {
 
 export class OneButtonGroupDefinition {
     ButtonGroup!: ButtonGroupDefinition;
+}
+
+export class MultipleButtonGroupDefinition {
+    ButtonGroups!: ButtonGroupDefinition[];
 }
 
 export class OneButtonDefinition {
@@ -194,6 +204,7 @@ export type BodyType =
     | OneAreaDefinition
     | MultipleAreaDefinition
     | OneControlStationDefinition
+    | MultipleControlStationDefinition
     | OneAreaStatus
     | MultipleAreaStatus
     | OneDeviceStatus
@@ -203,6 +214,7 @@ export type BodyType =
     | MultipleZoneStatus
     | OnePingResponse
     | OneButtonGroupDefinition
+    | MultipleButtonGroupDefinition
     | OneButtonDefinition
     | OneButtonStatusEvent
     | MultipleOccupancyGroupStatus
@@ -251,6 +263,9 @@ export function parseBody(type: MessageBodyType, data: object): BodyType {
         case 'OneButtonGroupDefinition':
             theType = OneButtonGroupDefinition;
             break;
+        case 'MultipleButtonGroupDefinition':
+            theType = MultipleButtonGroupDefinition;
+            break;
         case 'OneButtonDefinition':
             theType = OneButtonDefinition;
             break;
@@ -277,6 +292,9 @@ export function parseBody(type: MessageBodyType, data: object): BodyType {
             break;
         case 'OneControlStationDefinition':
             theType = OneControlStationDefinition;
+            break;
+        case 'MultipleControlStationDefinition':
+            theType = MultipleControlStationDefinition;
             break;
         case 'OneProjectDefinition':
             theType = OneProjectDefinition;
