@@ -2,39 +2,15 @@ import { WallDimmer } from './WallDimmer';
 import { PicoRemote } from './PicoRemote';
 import { SerenaTiltOnlyWoodBlind } from './SerenaTiltOnlyWoodBlind';
 import { CasetaSmartBridge } from './SmartBridge';
+import { RPSOccupancySensor } from './RPSOccupancySensor';
 
-import { LeapClient, Href, DeviceDefinition } from '../index';
+import { OneOccupancySensorDefinition, LeapClient, Href, DeviceDefinition, OccupancyStatus } from '../index';
 
-export type LutronDevice = CasetaSmartBridge | WallDimmer | SerenaTiltOnlyWoodBlind | PicoRemote;
-
-export async function reifyDevice(defn: DeviceDefinition, bridge: CasetaSmartBridge, client: LeapClient): Promise<LutronDevice | Error> {
-    switch (defn.DeviceType) {
-
-        case 'SmartBridge':
-        case 'SmartBridgePro': {
-            bridge.device = defn;
-            return bridge;
-        }
-
-        case 'WallDimmer':
-            return new WallDimmer(defn, bridge, client);
-
-        case 'SerenaTiltOnlyWoodBlind':
-            return new SerenaTiltOnlyWoodBlind(defn, bridge, client);
-
-        case 'Pico2Button':
-        case 'Pico2ButtonRaiseLower':
-        case 'Pico3Button':
-        case 'Pico3ButtonRaiseLower':
-        case 'Pico4Button2Group':
-        case 'Pico4ButtonScene':
-        case 'Pico4ButtonZone': {
-            return new PicoRemote(defn, bridge, client);
-        }
-
-        default:
-            return new Error(`unknown device type ${defn.DeviceType}`);
-    }
+export interface LutronDevice {
+    get name(): string;
+    get deviceType(): string;
+    get serialNumber(): string;
+    get modelNumber(): string;
 }
 
 export interface Light {
@@ -46,5 +22,9 @@ export interface Light {
 
 export interface Tiltable {
     setTilt(angle: number): Promise<void>;
-    getTilt(): Promise<number>
+    getTilt(): Promise<number>;
+}
+
+export interface OccupancySensor {
+    status: OccupancyStatus;
 }

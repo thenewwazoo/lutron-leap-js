@@ -35,6 +35,7 @@ export type MessageBodyType =
     | 'OneButtonStatusEvent'
     | 'MultipleOccupancyGroupStatus'
     | 'OneOccupancyGroupDefinition'
+    | 'OneOccupancySensorDefinition'
     | 'OneClientSettingDefinition'
     | 'MultipleVirtualButtonDefinition'
     | 'OneVirtualButtonDefinition'
@@ -145,6 +146,10 @@ export class OneOccupancyGroupDefinition {
     OccupancyGroup!: OccupancyGroupDefinition;
 }
 
+export class OneOccupancySensorDefinition {
+    OccupancySensor!: OccupancySensorDefinition;
+}
+
 export class OneClientSettingDefinition {
     ClientSetting!: ClientSettingDefinition;
 }
@@ -206,7 +211,8 @@ export type BodyType =
     | OneButtonDefinition
     | OneButtonStatusEvent
     | MultipleOccupancyGroupStatus
-    | OccupancyGroupDefinition
+    | OneOccupancyGroupDefinition
+    | OneOccupancySensorDefinition
     | OneClientSettingDefinition
     | MultipleVirtualButtonDefinition
     | OneVirtualButtonDefinition
@@ -298,6 +304,9 @@ export function parseBody(type: MessageBodyType, data: object): BodyType {
             break;
         case 'OneOccupancyGroupDefinition':
             theType = OneOccupancyGroupDefinition;
+            break;
+        case 'OneOccupancySensorDefinition':
+            theType = OneOccupancySensorDefinition;
             break;
         case 'OneClientSettingDefinition':
             theType = OneClientSettingDefinition;
@@ -584,7 +593,7 @@ export type PresetDefinition = Href & {
 export type OccupancyStatus = 'Occupied' | 'Unoccupied' | 'Unknown';
 
 export type OccupancyGroupStatus = Href & {
-    OccupancyGroup: OccupancyGroupDefinition;
+    OccupancyGroup: Href;
     OccupancyStatus: OccupancyStatus;
 };
 
@@ -595,6 +604,12 @@ export type OccupancyGroupDefinition = Href & {
     ProgrammingType?: string;
     OccupiedActionSchedule?: { ScheduleType: string }; // nfi
     UnoccupiedActionSchedule?: { ScheduleType: string }; // also nfi
+};
+
+export type OccupancySensorDefinition = Href & {
+    Parent: Href;
+    EnabledState: "Enabled" | "Disabled";
+    OccupancyGroups: Href[];
 };
 
 export type AssociatedArea = Href & {

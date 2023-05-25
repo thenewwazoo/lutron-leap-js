@@ -1,12 +1,12 @@
 const debug = require('debug');
 
-const MockTLS = require('../__mocks__/tls.js');
+const MockTLS = require('../../__mocks__/tls.js');
 import * as tls from 'tls';
 
 import { ImportMock } from 'ts-mock-imports';
 
-import { Response, ResponseWithTag } from './Messages';
-import { LeapClient } from './LeapClient';
+import { Response, ResponseWithTag } from '../Messages';
+import { LeapClient } from '../LeapClient';
 
 const conn_stub = ImportMock.mockFunction(tls, 'connect', MockTLS.theSocket);
 const ctx_stub = ImportMock.mockFunction(tls, 'createSecureContext', Object.create(null));

@@ -27,8 +27,11 @@ const logDebug = debug('leap:device:caseta:scene');
 export class VirtualButton {
     public readonly name: string;
 
-    constructor(private device: VirtualButtonDefinition, private bridge: CasetaSmartBridge, private client: LeapClient) {
-
+    constructor(
+        private device: VirtualButtonDefinition,
+        private bridge: CasetaSmartBridge,
+        private client: LeapClient,
+    ) {
         this.name = device.Name;
     }
 
@@ -54,9 +57,7 @@ export class VirtualButton {
             const programmingModel: OneProgrammingModelDefinition = await this.client.retrieve(
                 this.device.ProgrammingModel,
             );
-            const preset: OnePresetDefinition = await this.client.retrieve(
-                programmingModel.ProgrammingModel.Preset,
-            );
+            const preset: OnePresetDefinition = await this.client.retrieve(programmingModel.ProgrammingModel.Preset);
 
             if (preset.Preset.PresetAssignments !== undefined) {
                 for (const presetAssignmentHref of preset.Preset.PresetAssignments) {
@@ -95,9 +96,7 @@ export class VirtualButton {
 
             if (preset.Preset.TiltAssignments !== undefined) {
                 for (const tiltAssignmentHref of preset.Preset.TiltAssignments) {
-                    const tiltAssignment: OneTiltAssignmentDefinition = await this.client.retrieve(
-                        tiltAssignmentHref,
-                    );
+                    const tiltAssignment: OneTiltAssignmentDefinition = await this.client.retrieve(tiltAssignmentHref);
                     const tgtLevel = tiltAssignment.TiltAssignment.Tilt;
                     const zoneStatus: OneZoneStatus = await this.client.retrieve(
                         tiltAssignment.TiltAssignment.AssignableResource,

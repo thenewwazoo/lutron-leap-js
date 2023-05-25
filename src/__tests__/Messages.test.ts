@@ -1,5 +1,5 @@
-import { Response, ResponseHeader, ResponseStatus } from './Messages';
-import * as mb from './MessageBodyTypes';
+import { Response, ResponseHeader, ResponseStatus } from '../Messages';
+import * as mb from '../MessageBodyTypes';
 
 test('newly-discovered device', () => {
     const line =

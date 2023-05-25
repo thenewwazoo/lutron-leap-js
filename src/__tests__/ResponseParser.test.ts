@@ -1,5 +1,5 @@
-import { Response } from './Messages';
-import { ResponseParser } from './ResponseParser';
+import { Response } from '../Messages';
+import { ResponseParser } from '../ResponseParser';
 
 test('single happy message', () => {
     const p = new ResponseParser();

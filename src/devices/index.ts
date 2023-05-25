@@ -4,3 +4,4 @@ export * from './SerenaTiltOnlyWoodBlind';
 export * from './SmartBridge';
 export * from './VirtualButton';
 export * from './WallDimmer';
+export * from './RPSOccupancySensor';

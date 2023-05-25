@@ -38,8 +38,20 @@ export class WallDimmer extends (EventEmitter as new () => TypedEmitter<LightEve
         this.bridge.registerZone(device, this.handleUpdate.bind(this));
     }
 
-    public get name(): string {
+    get name(): string {
         return this.device.FullyQualifiedName.join(' ');
+    }
+
+    get deviceType(): string {
+        return this.device.DeviceType;
+    }
+
+    get serialNumber(): string {
+        return this.device.SerialNumber;
+    }
+
+    get modelNumber(): string {
+        return this.device.ModelNumber;
     }
 
     private handleUpdate(response: Response): void {

@@ -1,28 +1,38 @@
-
 import debug from 'debug';
 import { CommuniqueType, DeviceDefinition, LeapClient, OneZoneStatus, Response } from '../index';
 import { EventEmitter } from 'events';
 import TypedEmitter from 'typed-emitter';
 
-import {
-    Tiltable,
-} from './DeviceClasses';
+import { Tiltable } from './DeviceClasses';
 import { CasetaSmartBridge } from './SmartBridge';
 
 const logDebug = debug('leap:device:serenatiltonlywoodblind');
 
 type TiltEvents = {
     tilt: (angle: number) => void;
-}
+};
 
 export class SerenaTiltOnlyWoodBlind extends (EventEmitter as new () => TypedEmitter<TiltEvents>) implements Tiltable {
-    public name: string;
-
     constructor(private device: DeviceDefinition, private bridge: CasetaSmartBridge, private client: LeapClient) {
         super();
 
-        this.name = device.FullyQualifiedName.join(" ");
         this.bridge.registerZone(this.device, this.handleUpdate.bind(this));
+    }
+
+    get name(): string {
+        return this.device.FullyQualifiedName.join(' ');
+    }
+
+    get deviceType(): string {
+        return this.device.DeviceType;
+    }
+
+    get serialNumber(): string {
+        return this.device.SerialNumber;
+    }
+
+    get modelNumber(): string {
+        return this.device.ModelNumber;
     }
 
     async setTilt(angle: number): Promise<void> {
@@ -42,13 +52,13 @@ export class SerenaTiltOnlyWoodBlind extends (EventEmitter as new () => TypedEmi
     }
 
     async getTilt(): Promise<number> {
-        const s: OneZoneStatus = await this.client.retrieve(this.device.LocalZones[0], "/status");
+        const s: OneZoneStatus = await this.client.retrieve(this.device.LocalZones[0], '/status');
         return s.ZoneStatus.Tilt;
     }
 
     public handleUpdate(resp: Response) {
         const tilt = (resp.Body! as OneZoneStatus).ZoneStatus.Tilt;
-        logDebug(this.name, "got update of tilt", tilt);
+        logDebug(this.name, 'got update of tilt', tilt);
         this.emit('tilt', tilt);
     }
 }
