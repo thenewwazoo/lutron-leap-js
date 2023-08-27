@@ -24,6 +24,8 @@ const logDebug = debug('leap:bridge');
 export const LEAP_PORT = 8081;
 const PING_INTERVAL_MS = 300000;
 const PING_TIMEOUT_MS = 10000;
+const WAIT_BEFORE_CONNECT_MS = 20000;
+const WAIT_BEFORE_RECONNECT_MS = 5000;
 
 export interface BridgeInfo {
     firmwareRevision: string;
@@ -44,12 +46,28 @@ export class SmartBridge extends (EventEmitter as new () => TypedEmitter<SmartBr
     constructor(public readonly bridgeID: string, public client: LeapClient) {
         super();
         logDebug('new bridge', bridgeID, 'being constructed');
+        this.bridgeReconfigInProgress = false;
         client.on('unsolicited', this._handleUnsolicited.bind(this));
         client.on('disconnected', this._handleDisconnect.bind(this));
-
         this.startPingLoop();
     }
-
+    public async reconfigureBridge(newClient: LeapClient) {
+        this.bridgeReconfigInProgress = true;
+        const old_client = this.client;
+        // replace the old client with the new
+        this.client = newClient;
+        this.client.on('unsolicited', this._handleUnsolicited.bind(this));
+        this.client.on('disconnected', this._handleDisconnect.bind(this));
+        // Wait to before trigerring disconnection, otherwise we will get a "connection refused" message from the bridge
+        // when devices are re-subscribing
+        await new Promise(resolve => setTimeout(resolve, WAIT_BEFORE_CONNECT_MS));
+        // close the old client's connections and remove its references to the bridge so it can be GC'd
+        old_client.close();
+        this.emit('disconnected');
+        // Wait to allow time for client re-connection
+        await new Promise(resolve => setTimeout(resolve, WAIT_BEFORE_RECONNECT_MS));
+        this.bridgeReconfigInProgress = false;
+    }
     private startPingLoop(): void {
         this.pingLooper = setInterval((): void => {
             const pingPromise = this.client.request('ReadRequest', '/server/1/status/ping');
