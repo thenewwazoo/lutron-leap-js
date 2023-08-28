@@ -42,6 +42,7 @@ type SmartBridgeEvents = {
 
 export class SmartBridge extends (EventEmitter as new () => TypedEmitter<SmartBridgeEvents>) {
     private pingLooper: ReturnType<typeof setInterval> | null = null;
+    public bridgeReconfigInProgress: boolean;
 
     constructor(public readonly bridgeID: string, public client: LeapClient) {
         super();
