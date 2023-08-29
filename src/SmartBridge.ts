@@ -55,6 +55,12 @@ export class SmartBridge extends (EventEmitter as new () => TypedEmitter<SmartBr
     public async reconfigureBridge(newClient: LeapClient) {
         this.bridgeReconfigInProgress = true;
         const old_client = this.client;
+        old_client.removeAllListeners('unsolicited');
+        old_client.removeAllListeners('disconnected');
+        // close the old client's connections and remove its references to the bridge so it can be GC'd
+        this.pingLooper = null;
+        old_client._empty();
+        old_client.close();
         // replace the old client with the new
         this.client = newClient;
         this.client.on('unsolicited', this._handleUnsolicited.bind(this));
@@ -62,11 +68,10 @@ export class SmartBridge extends (EventEmitter as new () => TypedEmitter<SmartBr
         // Wait to before trigerring disconnection, otherwise we will get a "connection refused" message from the bridge
         // when devices are re-subscribing
         await new Promise(resolve => setTimeout(resolve, WAIT_BEFORE_CONNECT_MS));
-        // close the old client's connections and remove its references to the bridge so it can be GC'd
-        old_client.close();
         this.emit('disconnected');
         // Wait to allow time for client re-connection
         await new Promise(resolve => setTimeout(resolve, WAIT_BEFORE_RECONNECT_MS));
+        this.startPingLoop();
         this.bridgeReconfigInProgress = false;
     }
     private startPingLoop(): void {
