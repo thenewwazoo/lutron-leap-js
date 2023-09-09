@@ -42,6 +42,7 @@
         "lint": "tslint -p tsconfig.json --fix"
     },
     "dependencies": {
+        "async-retry": "^1.3.3",
         "ip-address": "^8.1.0",
         "tinkerhub-mdns": "^0.5.1",
         "uuid": "^9.0.0"

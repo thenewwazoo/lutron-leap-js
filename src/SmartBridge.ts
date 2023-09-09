@@ -1,4 +1,5 @@
 import debug from 'debug';
+import * as retry from 'async-retry';
 import { EventEmitter } from 'events';
 
 import { LeapClient } from './LeapClient';
@@ -24,8 +25,7 @@ const logDebug = debug('leap:bridge');
 export const LEAP_PORT = 8081;
 const PING_INTERVAL_MS = 300000;
 const PING_TIMEOUT_MS = 10000;
-const WAIT_BEFORE_CONNECT_MS = 20000;
-const WAIT_BEFORE_RECONNECT_MS = 5000;
+const CONNECT_MAX_RETRY = 20;
 
 export interface BridgeInfo {
     firmwareRevision: string;
@@ -54,23 +54,26 @@ export class SmartBridge extends (EventEmitter as new () => TypedEmitter<SmartBr
     }
     public async reconfigureBridge(newClient: LeapClient) {
         this.bridgeReconfigInProgress = true;
-        const old_client = this.client;
-        old_client.removeAllListeners('unsolicited');
-        old_client.removeAllListeners('disconnected');
+        const oldClient = this.client;
         // close the old client's connections and remove its references to the bridge so it can be GC'd
         this.pingLooper = null;
-        old_client._empty();
-        old_client.close();
+        oldClient.drain();
         // replace the old client with the new
         this.client = newClient;
         this.client.on('unsolicited', this._handleUnsolicited.bind(this));
         this.client.on('disconnected', this._handleDisconnect.bind(this));
-        // Wait to before trigerring disconnection, otherwise we will get a "connection refused" message from the bridge
-        // when devices are re-subscribing
-        await new Promise(resolve => setTimeout(resolve, WAIT_BEFORE_CONNECT_MS));
+        // Make a new connection with the bridge, retry to make sure we get it
+        // A freshly boot bridge will refuses the connection during several seconds
+        await retry(
+            async () => {
+                logDebug('Connecting ...');
+                await this.client.connect();
+                logDebug('Connected');
+            },
+            { retries: CONNECT_MAX_RETRY, factor: 1 }
+        );
+        // Send disconnect signal for re-subscribing
         this.emit('disconnected');
-        // Wait to allow time for client re-connection
-        await new Promise(resolve => setTimeout(resolve, WAIT_BEFORE_RECONNECT_MS));
         this.startPingLoop();
         this.bridgeReconfigInProgress = false;
     }
