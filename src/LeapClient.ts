@@ -149,18 +149,16 @@ export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClie
             timeout = setTimeout(() => {
                 requestReject(new Error('request with tag' + tag + 'timed out'));
             }, 5000);
-
             logDebug('sent request tag', tag, ' successfully');
-        });
 
-        this.inFlightRequests.set(tag, {
-            message,
-            resolve: requestResolve,
-            reject: requestReject,
-            timeout,
+            this.inFlightRequests.set(tag!, {
+                message,
+                resolve: requestResolve,
+                reject: requestReject,
+                timeout,
+            });
+            logDebug('added promise to inFlightRequests with tag key', tag);
         });
-        logDebug('added promise to inFlightRequests with tag key', tag);
-
         return requestPromise;
     }
 
@@ -178,7 +176,7 @@ export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClie
                 });
 
                 this.socket.once('error', (e) => {
-                    console.error('connection failed: ', e);
+                    logDebug('connection failed: ', e);
                     this.connected = null;
                     reject(e);
                 });
@@ -225,6 +223,18 @@ export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClie
         });
     }
 
+    public drain() {
+        this.removeAllListeners('unsolicited');
+        this.removeAllListeners('disconnected');
+        // Cancel all pending timeouts if any
+        for (const tag of this.inFlightRequests.keys()) {
+            const request = this.inFlightRequests.get(tag)!;
+            clearTimeout(request.timeout);
+        }
+        this._empty();
+        this.close();
+    }
+
     private _empty() {
         this.inFlightRequests.clear();
         this.taggedSubscriptions.clear();
@@ -234,7 +244,7 @@ export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClie
         logDebug('_onConnect called');
 
         const socketErr = (err: Error) => {
-            console.error('socket error:', err);
+            logDebug('socket error:', err);
         };
 
         const socketEnd = () => {
@@ -244,7 +254,7 @@ export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClie
         };
 
         const socketClose = (sock: TLSSocket): void => {
-            console.warn('client socket has closed.');
+            logDebug('client socket has closed.');
 
             this.connected = null;
             this._empty();

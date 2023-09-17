@@ -1,4 +1,5 @@
 import debug from 'debug';
+import * as retry from 'async-retry';
 import { EventEmitter } from 'events';
 
 import { LeapClient } from './LeapClient';
@@ -24,6 +25,7 @@ const logDebug = debug('leap:bridge');
 export const LEAP_PORT = 8081;
 const PING_INTERVAL_MS = 300000;
 const PING_TIMEOUT_MS = 10000;
+const CONNECT_MAX_RETRY = 20;
 
 export interface BridgeInfo {
     firmwareRevision: string;
@@ -40,16 +42,41 @@ type SmartBridgeEvents = {
 
 export class SmartBridge extends (EventEmitter as new () => TypedEmitter<SmartBridgeEvents>) {
     private pingLooper: ReturnType<typeof setInterval> | null = null;
+    public bridgeReconfigInProgress: boolean;
 
     constructor(public readonly bridgeID: string, public client: LeapClient) {
         super();
         logDebug('new bridge', bridgeID, 'being constructed');
+        this.bridgeReconfigInProgress = false;
         client.on('unsolicited', this._handleUnsolicited.bind(this));
         client.on('disconnected', this._handleDisconnect.bind(this));
-
         this.startPingLoop();
     }
-
+    public async reconfigureBridge(newClient: LeapClient) {
+        this.bridgeReconfigInProgress = true;
+        const oldClient = this.client;
+        // close the old client's connections and remove its references to the bridge so it can be GC'd
+        this.pingLooper = null;
+        oldClient.drain();
+        // replace the old client with the new
+        this.client = newClient;
+        this.client.on('unsolicited', this._handleUnsolicited.bind(this));
+        this.client.on('disconnected', this._handleDisconnect.bind(this));
+        // Make a new connection with the bridge, retry to make sure we get it
+        // A freshly boot bridge will refuses the connection during several seconds
+        await retry(
+            async () => {
+                logDebug('Connecting ...');
+                await this.client.connect();
+                logDebug('Connected');
+            },
+            { retries: CONNECT_MAX_RETRY, factor: 1 }
+        );
+        // Send disconnect signal for re-subscribing
+        this.emit('disconnected');
+        this.startPingLoop();
+        this.bridgeReconfigInProgress = false;
+    }
     private startPingLoop(): void {
         this.pingLooper = setInterval((): void => {
             const pingPromise = this.client.request('ReadRequest', '/server/1/status/ping');
