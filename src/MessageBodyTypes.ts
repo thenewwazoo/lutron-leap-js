@@ -45,6 +45,7 @@ export type MessageBodyType =
     | 'OneDimmedLevelAssignmentDefinition'
     | 'OneFanSpeedAssignmentDefinition'
     | 'OneTiltAssignmentDefinition'
+    | 'OneLEDStatus'
     | 'ExceptionDetail';
 
 export class OneDeviceStatus {
@@ -187,6 +188,10 @@ export class OneTiltAssignmentDefinition {
     TiltAssignment!: TiltAssignmentDefinition;
 }
 
+export class OneLEDStatus {
+    LEDStatus!: LEDStatusDefinition;
+}
+
 export class ExceptionDetail {
     Message = '';
 }
@@ -227,6 +232,7 @@ export type BodyType =
     | OneDimmedLevelAssignmentDefinition
     | OneFanSpeedAssignmentDefinition
     | OneTiltAssignmentDefinition
+    | OneLEDStatus
     | ExceptionDetail;
 
 export function parseBody(type: MessageBodyType, data: object): BodyType {
@@ -341,6 +347,8 @@ export function parseBody(type: MessageBodyType, data: object): BodyType {
         case 'OneTiltAssignmentDefinition':
             theType = OneTiltAssignmentDefinition;
             break;
+        case 'OneLEDStatus':
+            theType = OneLEDStatus;
         default:
             throw new UnimplementedMessageBodyType(type as string);
     }
@@ -633,6 +641,11 @@ export type ClientSettingDefinition = Href & {
 
 export type PingResponseDefinition = {
     LEAPVersion: number;
+};
+
+export declare type LEDStatusDefinition = {
+    LED: number;
+    State?: "On" | "Off" | "Unknown";
 };
 
 export type VirtualButtonDefinition = Href & {
