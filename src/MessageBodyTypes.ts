@@ -145,6 +145,7 @@ export class MultipleButtonGroupDefinition {
 export class MultipleButtonGroupExpandedDefinition {
     ButtonGroupsExpanded!: ButtonGroupDefinition[];
 }
+
 export class OneButtonDefinition {
     Button!: ButtonDefinition;
 }
@@ -240,7 +241,6 @@ export type BodyType =
     | OneFanSpeedAssignmentDefinition
     | OneTiltAssignmentDefinition
     | OneLEDStatus
-    | MultipleControlStationDefinition
     | ExceptionDetail;
 
 export function parseBody(type: MessageBodyType, data: object): BodyType {
@@ -357,9 +357,6 @@ export function parseBody(type: MessageBodyType, data: object): BodyType {
             break;
         case 'OneLEDStatus':
             theType = OneLEDStatus;
-            break;
-        case 'MultipleControlStationDefinition':
-            theType = MultipleControlStationDefinition;
             break;
         case 'MultipleButtonGroupExpandedDefinition':
             theType = MultipleButtonGroupExpandedDefinition;
