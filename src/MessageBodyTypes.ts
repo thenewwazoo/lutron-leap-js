@@ -118,6 +118,10 @@ export class OneControlStationDefinition {
     ControlStation!: ControlStationDefinition;
 }
 
+export class MultipleControlStationDefinition {
+    ControlStations!: ControlStationDefinition[];
+}
+
 export class OneZoneStatus {
     ZoneStatus!: ZoneStatus;
 }
@@ -191,10 +195,6 @@ export class OneTiltAssignmentDefinition {
 
 export class OneLEDStatus {
     LEDStatus!: LEDStatusDefinition;
-}
-
-export class MultipleControlStationDefinition {
-    ControlStations!: ControlStationDefinition[];
 }
 
 
