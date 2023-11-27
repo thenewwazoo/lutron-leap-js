@@ -33,6 +33,7 @@ export type MessageBodyType =
     | 'OnePingResponse'
     | 'OneButtonGroupDefinition'
     | 'MultipleButtonGroupDefinition'
+    | 'MultipleButtonGroupExpandedDefinition'
     | 'OneButtonDefinition'
     | 'OneButtonStatusEvent'
     | 'MultipleOccupancyGroupStatus'
@@ -46,6 +47,7 @@ export type MessageBodyType =
     | 'OneFanSpeedAssignmentDefinition'
     | 'OneTiltAssignmentDefinition'
     | 'OneLEDStatus'
+    | 'MultipleButtonGroupExpandedDefinition'
     | 'ExceptionDetail';
 
 export class OneDeviceStatus {
@@ -116,10 +118,6 @@ export class OneControlStationDefinition {
     ControlStation!: ControlStationDefinition;
 }
 
-export class MultipleControlStationDefinition {
-    ControlStations!: ControlStationDefinition[];
-}
-
 export class OneZoneStatus {
     ZoneStatus!: ZoneStatus;
 }
@@ -140,6 +138,9 @@ export class MultipleButtonGroupDefinition {
     ButtonGroups!: ButtonGroupDefinition[];
 }
 
+export class MultipleButtonGroupExpandedDefinition {
+    ButtonGroupsExpanded!: ButtonGroupDefinition[];
+}
 export class OneButtonDefinition {
     Button!: ButtonDefinition;
 }
@@ -192,6 +193,11 @@ export class OneLEDStatus {
     LEDStatus!: LEDStatusDefinition;
 }
 
+export class MultipleControlStationDefinition {
+    ControlStations!: ControlStationDefinition[];
+}
+
+
 export class ExceptionDetail {
     Message = '';
 }
@@ -220,6 +226,7 @@ export type BodyType =
     | OnePingResponse
     | OneButtonGroupDefinition
     | MultipleButtonGroupDefinition
+    | MultipleButtonGroupExpandedDefinition
     | OneButtonDefinition
     | OneButtonStatusEvent
     | MultipleOccupancyGroupStatus
@@ -233,6 +240,7 @@ export type BodyType =
     | OneFanSpeedAssignmentDefinition
     | OneTiltAssignmentDefinition
     | OneLEDStatus
+    | MultipleControlStationDefinition
     | ExceptionDetail;
 
 export function parseBody(type: MessageBodyType, data: object): BodyType {
@@ -349,8 +357,17 @@ export function parseBody(type: MessageBodyType, data: object): BodyType {
             break;
         case 'OneLEDStatus':
             theType = OneLEDStatus;
+            break;
+        case 'MultipleControlStationDefinition':
+            theType = MultipleControlStationDefinition;
+            break;
+        case 'MultipleButtonGroupExpandedDefinition':
+            theType = MultipleButtonGroupExpandedDefinition;
+            break;
         default:
-            throw new UnimplementedMessageBodyType(type as string);
+            console.error('unknown type: ' + type)
+            theType = Map;
+            
     }
     return Object.assign(new theType(), data);
 }
@@ -645,7 +662,7 @@ export type PingResponseDefinition = {
 
 export declare type LEDStatusDefinition = {
     LED: number;
-    State?: "On" | "Off" | "Unknown";
+    State?: "On" | "Off";
 };
 
 export type VirtualButtonDefinition = Href & {
@@ -655,6 +672,12 @@ export type VirtualButtonDefinition = Href & {
     Name: string;
     Parent: Href;
     ProgrammingModel: Href;
+    Engraving: {
+        Text: string;
+    };
+    AssociatedLED: {
+        href: Href;
+    };
 };
 
 export type DimmedLevelAssignmentDefinition = Href & {
