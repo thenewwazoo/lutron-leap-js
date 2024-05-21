@@ -147,9 +147,9 @@ export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClie
         let timeout;
         this.socket?.write(msg + '\n', () => {
             timeout = setTimeout(() => {
-                requestReject(new Error('request with tag' + tag + 'timed out'));
+                requestReject(new Error('request with tag ' + tag + ' timed out'));
             }, 5000);
-            logDebug('sent request tag', tag, ' successfully');
+            logDebug('sent request tag ', tag, ' successfully');
 
             this.inFlightRequests.set(tag!, {
                 message,
@@ -157,7 +157,7 @@ export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClie
                 reject: requestReject,
                 timeout,
             });
-            logDebug('added promise to inFlightRequests with tag key', tag);
+            logDebug('added promise to inFlightRequests with tag key ', tag);
         });
         return requestPromise;
     }
