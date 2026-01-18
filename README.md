@@ -59,6 +59,10 @@ Caseta Smart Bridge 2 and Smart Bridge 2 Pro devices are [discovered by using mD
 
 The SmartBridge class abstractions for relevant operations like subscribing to known device types. The goal is to relieve the user of having to know how to construct URLs and post bodies, but instead to encode that information in this library.
 
+## Examples
+
+`examples/findBridges.ts` is a small CLI that wraps `BridgeFinder` so you can scan your LAN for bridges without writing code. After `npm install`, you can either run it directly with ts-node (`npx ts-node examples/findBridges.ts 30`) or build the repo with `npm run build` and copy/run the compiled script via `node dist/examples/findBridges.js 30`. Omit the numeric argument (defaults to 15 seconds) or pass `infinite` to keep it running until you press `Ctrl+C`. The script logs every discovery and prints a summary when it stops, so it’s handy to drop onto another host for basic connectivity tests.
+
 ## Real-world testing
 
 This library has been extensively tested on Caseta Smart Bridge 2 (pro and non-pro) devices, and gracious contributors have tested it with RA3 and QSX processors. If you have used it elsewhere, please drop a note and let me know. So far, this library has been tested with:
