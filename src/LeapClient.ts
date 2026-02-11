@@ -277,6 +277,7 @@ export class LeapClient extends (EventEmitter as new () => TypedEmitter<LeapClie
 
     private _handleResponse(response: Response): void {
         const tag = response.Header.ClientTag;
+
         if (tag !== undefined) {
             logDebug('got response to tag', tag);
             const arrow: MessageDetails = this.inFlightRequests.get(tag)!;
