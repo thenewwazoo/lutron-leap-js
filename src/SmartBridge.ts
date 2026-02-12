@@ -96,8 +96,14 @@ export class SmartBridge extends (EventEmitter as new () => TypedEmitter<SmartBr
     // Track the highest button ID found per device for sequential probing
     private deviceHighestButtonId: Map<string, number> = new Map();
 
-    // Whether QSX-specific global subscriptions have been set up
-    private qsxSubscriptionsActive = false;
+    // Whether this bridge is a QSX processor. Set during device discovery.
+    // Used by PicoRemote to select the correct button event model:
+    // QSX buttons use press-only timers (short press on timeout) because the hub
+    // may deliver Press without Release; Caseta buttons use long press timers.
+    private _isQSX = false;
+    public get isQSX(): boolean {
+        return this._isQSX;
+    }
 
     constructor(public readonly bridgeID: string, public client: LeapClient) {
         super();
@@ -106,6 +112,13 @@ export class SmartBridge extends (EventEmitter as new () => TypedEmitter<SmartBr
         client.on('unsolicited', this._handleUnsolicited.bind(this));
         client.on('disconnected', this._handleDisconnect.bind(this));
         this.startPingLoop();
+
+        // Subscribe to global button events (needed for QSX, harmless for Caseta/RA3)
+        this.subscribeToAllButtons((r) => {
+            this._handleUnsolicited(r);
+        }).catch(() => {
+            // Subscription setup may fail on some processors
+        });
     }
     public async reconfigureBridge(newClient: LeapClient) {
         this.bridgeReconfigInProgress = true;
@@ -131,14 +144,12 @@ export class SmartBridge extends (EventEmitter as new () => TypedEmitter<SmartBr
         this.emit('disconnected');
         this.startPingLoop();
 
-        // Re-subscribe to global button events if QSX was previously detected
-        if (this.qsxSubscriptionsActive) {
-            this.subscribeToAllButtons((r) => {
-                this._handleUnsolicited(r);
-            }).catch(() => {
-                // Subscription setup may fail on some processors
-            });
-        }
+        // Re-subscribe to global button events
+        this.subscribeToAllButtons((r) => {
+            this._handleUnsolicited(r);
+        }).catch(() => {
+            // Subscription setup may fail on some processors
+        });
 
         this.bridgeReconfigInProgress = false;
     }
@@ -268,19 +279,10 @@ export class SmartBridge extends (EventEmitter as new () => TypedEmitter<SmartBr
         // with few devices should NOT trigger this crawl.
         if (gotNoContent || (deviceRequestFailed && standardDevices.length === 0)) {
             logDebug('QSX processor detected, crawling areas for device discovery');
+            this._isQSX = true;
             const qsxDevices = await this.discoverQSXDevices();
             for (const d of qsxDevices) {
                 deviceMap.set(d.href, d);
-            }
-
-            // Subscribe to global button/area events for QSX processors
-            if (!this.qsxSubscriptionsActive) {
-                this.qsxSubscriptionsActive = true;
-                this.subscribeToAllButtons((r) => {
-                    this._handleUnsolicited(r);
-                }).catch(() => {
-                    logDebug('Global button/area subscription failed');
-                });
             }
         }
 
