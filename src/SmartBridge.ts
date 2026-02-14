@@ -649,24 +649,48 @@ export class SmartBridge extends (EventEmitter as new () => TypedEmitter<SmartBr
         // Declared outside try block so we can merge with cached buttons after
         let discoveredButtons: ButtonDefinition[] = [];
 
+        // Helper to merge newly found buttons into discoveredButtons, deduplicating by href
+        const mergeButtons = (newButtons: ButtonDefinition[]): number => {
+            let added = 0;
+            for (const btn of newButtons) {
+                if (!discoveredButtons.some((b) => b.href === btn.href)) {
+                    discoveredButtons.push(btn);
+                    added++;
+                }
+            }
+            return added;
+        };
+
         try {
-            // Priority 1: If we have a highest known button ID for this device,
-            // try probing from there first (buttons are often sequential across buttongroups)
+            // On QSX, buttons within a single buttongroup can be split across
+            // two distant ID ranges: some near the buttongroup ID, others near
+            // the device ID. Probe ALL ranges unconditionally and merge results.
+
+            // Range 1: Near the highest known button ID for this device
+            // (buttons are often sequential across buttongroups on a device)
             if (highestKnownButtonId && highestKnownButtonId > 0) {
-                discoveredButtons = await probeButtonRange(highestKnownButtonId, 'sequential');
+                mergeButtons(await probeButtonRange(highestKnownButtonId, 'sequential'));
             }
 
-            // Priority 2: Try probing near the button group ID
-            if (discoveredButtons.length === 0) {
-                discoveredButtons = await probeButtonRange(buttonGroupId, 'buttongroup');
+            // Range 2: Near the button group ID
+            mergeButtons(await probeButtonRange(buttonGroupId, 'buttongroup'));
+
+            // Range 3: Near the device ID
+            // On QSX, buttons in a single buttongroup can be split across two
+            // distant ID ranges (some near the buttongroup ID, some near the
+            // device ID). When the IDs are far apart, earlier ranges can't
+            // cover both, so we must probe the device range even if range 2
+            // already found buttons. When they're close (within the probe
+            // window), range 2 already covers the device vicinity.
+            const PROBE_WINDOW = 20;
+            if (parentDeviceId > 0 && parentDeviceId !== buttonGroupId) {
+                const idsAreFarApart = Math.abs(buttonGroupId - parentDeviceId) > PROBE_WINDOW;
+                if (discoveredButtons.length === 0 || idsAreFarApart) {
+                    mergeButtons(await probeButtonRange(parentDeviceId, 'device'));
+                }
             }
 
-            // Priority 3: If no buttons found and device ID is different, try probing near device ID
-            if (discoveredButtons.length === 0 && parentDeviceId > 0 && parentDeviceId !== buttonGroupId) {
-                discoveredButtons = await probeButtonRange(parentDeviceId, 'device');
-            }
-
-            // Priority 4: Try querying the parent device's /button endpoint directly
+            // Range 4: Try querying the parent device's /button endpoint directly
             if (discoveredButtons.length === 0 && parentDeviceId > 0) {
                 try {
                     const deviceButtonResp = await this.client.request(
@@ -694,7 +718,7 @@ export class SmartBridge extends (EventEmitter as new () => TypedEmitter<SmartBr
                                     .catch(() => null),
                             );
                             const buttons = await Promise.all(buttonPromises);
-                            discoveredButtons = buttons.filter((b): b is ButtonDefinition => b !== null);
+                            mergeButtons(buttons.filter((b): b is ButtonDefinition => b !== null));
                         }
                     }
                 } catch (e) {
@@ -702,8 +726,8 @@ export class SmartBridge extends (EventEmitter as new () => TypedEmitter<SmartBr
                 }
             }
 
-            // Priority 5: If we found buttons, continue probing from the highest one found
-            // Loop until we stop finding new buttons (handles devices with many sequential buttons)
+            // Continuation: probe from each discovered cluster's highest ID
+            // to find any buttons that are just beyond the initial +20 window
             if (discoveredButtons.length > 0) {
                 let lastMaxId = Math.max(...discoveredButtons.map((b) => parseInt(b.href.split('/').pop() || '0', 10)));
                 let continuationRound = 0;
@@ -717,14 +741,7 @@ export class SmartBridge extends (EventEmitter as new () => TypedEmitter<SmartBr
                         break;
                     }
 
-                    // Merge with discovered buttons (deduplicate)
-                    let newButtonsAdded = 0;
-                    for (const btn of additionalButtons) {
-                        if (!discoveredButtons.some((b) => b.href === btn.href)) {
-                            discoveredButtons.push(btn);
-                            newButtonsAdded++;
-                        }
-                    }
+                    const newButtonsAdded = mergeButtons(additionalButtons);
 
                     if (newButtonsAdded === 0) {
                         break;
