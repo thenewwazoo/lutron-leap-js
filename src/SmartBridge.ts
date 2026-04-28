@@ -525,20 +525,26 @@ export class SmartBridge extends (EventEmitter as new () => TypedEmitter<SmartBr
             );
         }
 
-        // For QSX: Try to discover buttons via the button group's /button endpoint
+        // For QSX: Try to discover buttons via the button group's /button endpoint.
+        // Do NOT return early here — the QSX processor only returns the originally-programmed
+        // buttons from this endpoint; newly-added buttons are absent. We always fall through
+        // to probing so the full set is discovered.
+        let groupEndpointButtons: ButtonDefinition[] = [];
         try {
             const buttonResp = await this.client.request('ReadRequest', `${bgroup.href}/button`);
             if (buttonResp.Header.StatusCode?.code === 200) {
                 // @ts-ignore - Buttons response structure
-                const buttonRefs = buttonResp.Body?.Buttons || [];
+                const buttonRefs: Href[] = buttonResp.Body?.Buttons || [];
                 if (buttonRefs.length > 0) {
-                    return Promise.all(
-                        buttonRefs.map((button: Href) =>
-                            this.client
-                                .request('ReadRequest', button.href)
-                                .then((resp: Response) => (resp.Body! as OneButtonDefinition).Button),
-                        ),
-                    );
+                    groupEndpointButtons = (
+                        await Promise.all(
+                            buttonRefs.map((button: Href) =>
+                                this.client
+                                    .request('ReadRequest', button.href)
+                                    .then((resp: Response) => (resp.Body! as OneButtonDefinition).Button),
+                            ),
+                        )
+                    ).filter((b): b is ButtonDefinition => b != null);
                 }
             }
         } catch (e) {
@@ -550,8 +556,8 @@ export class SmartBridge extends (EventEmitter as new () => TypedEmitter<SmartBr
         // @ts-ignore
         const parentDeviceHref = bgroup.Parent?.href as string | undefined;
 
-        // Keep track of buttons found from cache - we'll augment with probing results
-        let cachedGroupButtons: ButtonDefinition[] = [];
+        // Seed with buttons returned by the group endpoint; augment with probing below
+        let cachedGroupButtons: ButtonDefinition[] = [...groupEndpointButtons];
 
         if (parentDeviceHref) {
             const allDeviceButtons = await this.getAllButtonsFromDevice(parentDeviceHref);
@@ -726,29 +732,45 @@ export class SmartBridge extends (EventEmitter as new () => TypedEmitter<SmartBr
                 }
             }
 
-            // Continuation: probe from each discovered cluster's highest ID
-            // to find any buttons that are just beyond the initial +20 window
+            // Continuation: probe from the frontier of EACH cluster of discovered buttons.
+            // Buttons on a keypad can live in disjoint ID ranges (e.g. ~3500s and ~46500s).
+            // Probing only from the global max would miss a lower cluster entirely.
             if (discoveredButtons.length > 0) {
-                let lastMaxId = Math.max(...discoveredButtons.map((b) => parseInt(b.href.split('/').pop() || '0', 10)));
+                const getClusterFrontiers = (): number[] => {
+                    const ids = discoveredButtons
+                        .map((b) => parseInt(b.href.split('/').pop() || '0', 10))
+                        .sort((a, b) => a - b);
+                    const frontiers: number[] = [];
+                    for (let i = 0; i < ids.length; i++) {
+                        // A gap of >20 between consecutive IDs means the next ID is a new cluster
+                        if (i === ids.length - 1 || ids[i + 1] - ids[i] > 20) {
+                            frontiers.push(ids[i]);
+                        }
+                    }
+                    return frontiers;
+                };
+
+                let frontiers = getClusterFrontiers();
                 let continuationRound = 0;
                 const MAX_CONTINUATION_ROUNDS = 10; // Safety limit
 
                 while (continuationRound < MAX_CONTINUATION_ROUNDS) {
                     continuationRound++;
-                    const additionalButtons = await probeButtonRange(lastMaxId, `continuation-${continuationRound}`);
+                    let anyNewFound = false;
 
-                    if (additionalButtons.length === 0) {
+                    for (const frontier of frontiers) {
+                        const additionalButtons = await probeButtonRange(frontier, `continuation-${continuationRound}`);
+                        if (additionalButtons.length > 0 && mergeButtons(additionalButtons) > 0) {
+                            anyNewFound = true;
+                        }
+                    }
+
+                    if (!anyNewFound) {
                         break;
                     }
 
-                    const newButtonsAdded = mergeButtons(additionalButtons);
-
-                    if (newButtonsAdded === 0) {
-                        break;
-                    }
-
-                    // Update lastMaxId for next round
-                    lastMaxId = Math.max(...discoveredButtons.map((b) => parseInt(b.href.split('/').pop() || '0', 10)));
+                    // Recalculate frontiers — new buttons may have extended a cluster or added one
+                    frontiers = getClusterFrontiers();
                 }
             }
 
