@@ -93,17 +93,24 @@ export class SmartBridge extends (EventEmitter as new () => TypedEmitter<SmartBr
                     logDebug('Ping succeeded', resp);
                 })
                 .catch((e) => {
-                    // if it fails, however, what do we do? the client's
-                    // behavior is to attempt to re-open the connection if it's
-                    // lost. that means calling `this.client.close()` might
-                    // clobber in-flight requests made between the ping timing
-                    // out and the attempt to close it. that's bad.
+                    // A failed or timed-out keep-alive ping means the LEAP
+                    // session is dead, even though the underlying TCP socket may
+                    // still look ESTABLISHED (a half-open connection, e.g. after
+                    // the bridge briefly changes address during a router reboot).
+                    // Nothing else will detect this: the socket never emits
+                    // 'close'/'error'/'end', so LeapClient never emits
+                    // 'disconnected' and the client never reconnects. The ping is
+                    // the only signal we get, so act on it.
                     //
-                    // I think the answer is: nothing. future attempts to use
-                    // the client will block (and potentially eventually time
-                    // out), and we don't ever want to prevent that happening
-                    // unless specifically requested.
-                    logDebug('Ping failed:', e);
+                    // Close the client to force recovery. `LeapClient.close()`
+                    // ends the socket, which emits 'disconnected' (triggering
+                    // re-subscription) and causes the next request to reconnect.
+                    // The previous concern about clobbering in-flight requests
+                    // does not apply here: a timed-out ping means the connection
+                    // is already dead, so any in-flight requests are already
+                    // doomed and will be retried after the reconnect.
+                    logDebug('Ping failed; closing client to force reconnect:', e);
+                    this.client.close();
                 });
         }, PING_INTERVAL_MS);
     }
